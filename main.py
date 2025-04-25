@@ -72,5 +72,5 @@ for n_item in [30, 40, 60, 70]:
     #
     # write_solution_to_excel("data/solution.xlsx", sheet_name="scip_reliability_constraint", problem=problem,
     #                         solution=sol_scip_reliability)
-    for i, times in enumerate(elapsed_time):
-        print(f"{i}: {[f"{t:.4f}" for t in times]} sec : {solver_error[i]}")
+        for i, times in enumerate(elapsed_time):
+            print(f"{i}: {[f"{t:.4f}" for t in times]} sec : {solver_error[i]}")
