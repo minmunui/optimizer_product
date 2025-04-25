@@ -27,8 +27,6 @@ for i in range(100):
     print(f"Total Cost: {total_cost}")
     print(f"Value : {total_value}")
 
-
-
     sol_cpsat_cost, total_cost, total_value, t_cpsat_cost = (
         cpsat.solve_cost_constraint(problem, cost_constraint=1000, value_weights=None))
     print(f"CP-SAT Cost Constraint: {i}")
@@ -56,7 +54,7 @@ for i in range(100):
 
     solver_error.append([sol_scip_cost == sol_cpsat_cost, sol_cpsat_reliability == sol_scip_reliability])
 
-    elapsed_time.append([t_scip_cost, t_scip_reliability, t_cpsat_cost, t_cpsat_reliability])
+    elapsed_time.append([t_scip_cost, t_cpsat_cost, t_scip_reliability, t_cpsat_reliability])
 
     pd.DataFrame(elapsed_time, columns=["scip_cost", "cpsat_cost", "scip_reliability", "cpsat_reliability"]).to_excel(
         "data/elapsed_time.xlsx", index=False)
