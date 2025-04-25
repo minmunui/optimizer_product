@@ -84,7 +84,7 @@ def _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values
         print("최적 해를 찾지 못했습니다.")
         return None
 
-def solve_cost_constraint_with_cpsat(problem, cost_constraint, value_weights=None):
+def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     """
     CP-SAT 솔버를 사용하여 비용 제약 문제를 해결합니다.
 
@@ -128,7 +128,7 @@ def solve_cost_constraint_with_cpsat(problem, cost_constraint, value_weights=Non
     # 결과 처리
     return _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True)
 
-def solve_reliability_constraint_with_cpsat(problem, reliability_constraint):
+def solve_reliability_constraint(problem, reliability_constraint):
     """
     CP-SAT 솔버를 사용하여 신뢰도 제약 문제를 해결합니다.
 
@@ -176,14 +176,14 @@ def main():
     problem = make_random_problem(random_seed=4)
     display_problem(problem)
 
-    selected_cost_constraint, total_cost, total_value = solve_cost_constraint_with_cpsat(problem, cost_constraint=500,
-                                                                         value_weights=None)
+    selected_cost_constraint, total_cost, total_value = solve_cost_constraint(problem, cost_constraint=500,
+                                                                              value_weights=None)
     print(f"Selected: {selected_cost_constraint}")
     print(f"Total Cost: {total_cost}")
     print(f"Value : {total_value}")
 
-    selected_reliability_constraint, total_cost, total_value = solve_reliability_constraint_with_cpsat(problem,
-                                                                                reliability_constraint=[150, 0.5, 0.5])
+    selected_reliability_constraint, total_cost, total_value = solve_reliability_constraint(problem,
+                                                                                            reliability_constraint=[150, 0.5, 0.5])
     print(f"Selected: {selected_reliability_constraint}")
     print(f"Total Cost: {total_cost}")
     print(f"Value : {total_value}")
