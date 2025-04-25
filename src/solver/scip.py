@@ -40,13 +40,12 @@ def _run_scip_solver(solver):
         solver: SCIP 솔버 객체
 
     Returns:
-        솔버 실행 상태
+        (status, float): 솔버 실행 상태와 실행 시간
     """
     time_start = time.time()
     status = solver.Solve()
     time_end = time.time()
-    print(f"[SCIP] Solver time: {time_end - time_start:.4f} seconds")
-    return status
+    return status, time_end - time_start
 def _process_scip_result(status, solver, x, num_item, action_dim, costs, values, value_weights=None,
                          is_cost_constraint=True):
     """
@@ -88,7 +87,7 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
         value_weights: 가치 차원에 대한 가중치. None인 경우 균등 분배
 
     Returns:
-        (selected, cost, value): 선택된 전략, 총 비용, 총 가치
+        (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 총 가치, 경과 시간
         최적 해를 찾지 못한 경우 None
     """
     values = problem["value"]
@@ -114,10 +113,10 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     solver.Maximize(objective_expr)
 
     # 솔버 실행
-    status = _run_scip_solver(solver)
+    status, elapsed_time = _run_scip_solver(solver)
 
     # 결과 처리
-    return _process_scip_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True)
+    return *_process_scip_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True), elapsed_time
 
 def solve_reliability_constraint(problem, reliability_constraint):
     """
@@ -128,7 +127,7 @@ def solve_reliability_constraint(problem, reliability_constraint):
         reliability_constraint: 각 가치 차원별 최소 요구 신뢰도
 
     Returns:
-        (selected, cost, value): 선택된 전략, 총 비용, 가치 리스트
+        (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 가치 리스트, 경과 시간
         최적 해를 찾지 못한 경우 None
 
     Raises:
@@ -157,10 +156,10 @@ def solve_reliability_constraint(problem, reliability_constraint):
     solver.Minimize(objective_expr)
 
     # 솔버 실행
-    status = _run_scip_solver(solver)
+    status, elapsed_time = _run_scip_solver(solver)
 
     # 결과 처리
-    return _process_scip_result(status, solver, x, num_item, action_dim, costs, values, None, False)
+    return *_process_scip_result(status, solver, x, num_item, action_dim, costs, values, None, False), elapsed_time
 
 def main():
     problem = make_random_problem(random_seed=4)

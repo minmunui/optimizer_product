@@ -37,20 +37,19 @@ def _run_cpsat_solver(model):
         model: CP-SAT 모델 객체
 
     Returns:
-        (status, solver): 솔버 실행 상태와 솔버 객체
+        (status, solver, float): 솔버 실행 상태와 솔버 객체 및 실행 시간
     """
     solver = cp_model.CpSolver()
     time_start = time.time()
     status = solver.Solve(model)
     time_end = time.time()
-    print(f"[CP-SAT] Solver time: {time_end - time_start:.4f} seconds")
 
     if status == cp_model.OPTIMAL:
         print("Optimal solution found.")
     elif status == cp_model.FEASIBLE:
         print("Feasible solution found.")
 
-    return status, solver
+    return status, solver, time_end - time_start
 
 def _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, value_weights=None,
                           is_cost_constraint=True):
@@ -94,7 +93,7 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
         value_weights: 가치 차원에 대한 가중치. None인 경우 균등 분배
 
     Returns:
-        (selected, cost, value): 선택된 전략, 총 비용, 총 가치
+        (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 총 가치, 경과 시간
         최적 해를 찾지 못한 경우 None
     """
     values = problem["value"]
@@ -123,10 +122,10 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     model.Maximize(objective_expr)
 
     # 솔버 실행
-    status, solver = _run_cpsat_solver(model)
+    status, solver, elapsed_time = _run_cpsat_solver(model)
 
     # 결과 처리
-    return _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True)
+    return *_process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True), elapsed_time
 
 def solve_reliability_constraint(problem, reliability_constraint):
     """
@@ -137,7 +136,7 @@ def solve_reliability_constraint(problem, reliability_constraint):
         reliability_constraint: 각 가치 차원별 최소 요구 신뢰도
 
     Returns:
-        (selected, cost, value): 선택된 전략, 총 비용, 가치 리스트
+        (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 가치 리스트, 경과 시간
         최적 해를 찾지 못한 경우 None
 
     Raises:
@@ -167,10 +166,10 @@ def solve_reliability_constraint(problem, reliability_constraint):
     model.Minimize(objective_expr)
 
     # 솔버 실행
-    status, solver = _run_cpsat_solver(model)
+    status, solver, elapsed_time = _run_cpsat_solver(model)
 
     # 결과 처리
-    return _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, None, False)
+    return *_process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, None, False), elapsed_time
 
 def main():
     problem = make_random_problem(random_seed=4)
