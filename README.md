@@ -1,6 +1,7 @@
 # Maintenance Strategy Optimizer
 
 ![Python Version](https://img.shields.io/badge/python-3.13-blue)
+![Python Version](https://img.shields.io/badge/python-3.12-blue)
 
 ## 개요
 
