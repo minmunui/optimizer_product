@@ -177,17 +177,18 @@ def write_solution_to_excel(file_path: str = "output_rel.xlsx",
 
 def add_nothing_strategy(problem) -> dict:
     """
-    문제 데이터에 아무것도 하지 않는 전략을 추가합니다.
+    문제 데이터에 아무것도 하지 않는 전략을 마지막에 추가합니다.
     Args:
         problem: dict {"cost": DataFrame, "value": list[DataFrame]}
 
     Returns:
         Dict: {"cost": 비용 데이터, "value": 가치 데이터 리스트}
     """
-    # 아무것도 하지 않는 전략 추가
-    problem["cost"].insert(0, "현상유지", 0)
+    # 마지막에 추가
+    idx = len(problem["cost"].columns)  # 현재 컬럼 개수
+    problem["cost"].insert(idx, "현상유지", 0)
     for i in range(len(problem["value"])):
-        problem["value"][i].insert(0, "현상유지", 0)
+        problem["value"][i].insert(idx, "현상유지", 0)
 
     return problem
 
