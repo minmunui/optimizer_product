@@ -109,7 +109,7 @@ def read_value_data(ws: Workbook, data_range: str) -> list[pd.DataFrame]:
 
 def write_solution_to_excel(file_path: str = "output_rel.xlsx",
                             sheet_name: str = "06. Maintenance Strategy",
-                            start_cell: str = "A1",
+                            start_cell: str = "A2",
                             problem: dict = None,
                             solution: list[int] | list[list[bool]] = None
                             ) -> None:
