@@ -95,8 +95,15 @@ def read_value_data(ws: Workbook, data_range: str) -> list[pd.DataFrame]:
     values = []
     value_data = np.array([record[1:] for record in value_range[2:]])
 
+    # 각 아이템에 대한 가치를 순회
     for i in range(num_item):
         item_info = []
+
+        # 빈 행에 대해서는 건너뛰기
+        if not value_data[i].any():
+            continue
+
+        # 각 가치에 대한 전략을 순회
         for j in range(value_dim):
             _value = []
             for k in range(num_strategy):
