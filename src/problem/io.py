@@ -117,8 +117,7 @@ def write_solution_to_excel(file_path: str = "output_rel.xlsx",
     최적화문제의 결과를 엑셀에 저장합니다. 시작 셀로부터 우하단으로 채워나갑니다. 행은 아이템을, 열은 전략을 나타냅니다.
 
     Args:
-        file_path: 엑셀파일의 이름
-        save_path: 저장할 엑셀파일의 이름. None일 경우 file_path로 저장됩니다.
+        file_path: 저장할 엑셀파일의 이름
         sheet_name: 엑셀 시트 이름
         start_cell: 시작 셀 위치, 해당 셀부터 우하단으로 채워나갑니다.
         problem: dict {"cost": DataFrame, "value": list[DataFrame]}
