@@ -113,11 +113,19 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     value_weights = _normalize_value_weights(values, value_weights)
 
     # 가치를 최대화하는 목적 함수
-    objective_expr = sum(
-        int(values[i].iloc[k, j] * weight * CP_SAT_COEF) * x[i][j]
-        for i in range(num_item) for j in range(action_dim)
-        for k, weight in enumerate(value_weights)
-    )
+    try:
+        objective_expr = sum(
+            int(values[i].iloc[k, j] * weight * CP_SAT_COEF) * x[i][j]
+            for i in range(num_item) for j in range(action_dim)
+            for k, weight in enumerate(value_weights)
+        )
+    except IndexError as e:
+        raise IndexError(f"{e}"
+                         f"비용테이블과 가치테이블에 존재하는 장치의 수가 일치하지 않을 수 있습니다.\n"
+                         f"비용테이블의 장치: {len(costs.index.tolist())}\n"
+                         f"가치테이블의 장치: {len([values[i].index.tolist() for i in range(len(values))])}\n"
+                         f"위 두 값이 일정하지 않을 경우, 입력 테이블의 범위가 잘못 설정되었을 수 있습니다.\n")
+
 
     model.Maximize(objective_expr)
 

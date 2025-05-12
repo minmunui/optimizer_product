@@ -77,6 +77,7 @@ def _process_scip_result(status, solver, x, num_item, action_dim, costs, values,
     else:
         print("최적 해를 찾지 못했습니다.")
         return None
+
 def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     """
     SCIP 솔버를 사용하여 비용 제약 문제를 해결합니다.
@@ -106,10 +107,18 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     value_weights = _normalize_value_weights(values, value_weights)
 
     # 가치를 최대화하는 목적 함수
-    objective_expr = sum(
-        x[i][j] * sum(weight * values[i].iloc[k, j] for k, weight in enumerate(value_weights))
-        for i in range(num_item) for j in range(action_dim)
-    )
+    try:
+        objective_expr = sum(
+            x[i][j] * sum(weight * values[i].iloc[k, j] for k, weight in enumerate(value_weights))
+            for i in range(num_item) for j in range(action_dim)
+        )
+    except IndexError as e:
+        raise IndexError(f"{e}"
+                         f"비용테이블과 가치테이블에 존재하는 장치의 수가 일치하지 않을 수 있습니다.\n"
+                         f"비용테이블의 장치: {len(costs.index.tolist())}\n"
+                         f"가치테이블의 장치: {len([values[i].index.tolist() for i in range(len(values))])}\n"
+                         f"위 두 값이 일정하지 않을 경우, 입력 테이블의 범위가 잘못 설정되었을 수 있습니다.\n")
+
     solver.Maximize(objective_expr)
 
     # 솔버 실행
