@@ -7,13 +7,14 @@ from src.problem.strategy import get_cost, get_total_value, get_value, _normaliz
 
 CP_SAT_COEF = 100_000
 
-def _init_cpsat_solver(num_item, action_dim):
+def _init_cpsat_solver(num_item, action_dim, allow_zero_strategy=False):
     """
     CP-SAT 솔버를 초기화하고 변수를 설정합니다.
 
     Args:
         num_item: 아이템 수
         action_dim: 각 아이템에 대한 전략(액션) 수
+        allow_zero_strategy: 아무것도 하지 않음 전략을 허용할지 여부. 현상유지 작전이 없을 경우 True로 설정해야 함.
 
     Returns:
         (model, x): CP-SAT 모델 객체와 변수 2차원 배열
@@ -23,9 +24,15 @@ def _init_cpsat_solver(num_item, action_dim):
     # 변수 선언
     x = [[model.NewBoolVar(f'x[{i}][{j}]') for j in range(action_dim)] for i in range(num_item)]
 
-    # 하나의 item은 하나의 전략만 선택할 수 있음
-    for i in range(num_item):
-        model.Add(sum(x[i][j] for j in range(action_dim)) == 1)
+    if allow_zero_strategy:
+        # 전략 선택하지 않음으로 "현상유지" 전략을 구현
+        for i in range(num_item):
+            model.Add(sum(x[i][j] for j in range(action_dim)) <= 1)
+            model.Add(x[i][0] == 0)
+    else:
+        # 하나의 item은 하나의 전략만 선택할 수 있음
+        for i in range(num_item):
+            model.Add(sum(x[i][j] for j in range(action_dim)) == 1)
 
     return model, x
 
@@ -81,9 +88,9 @@ def _process_cpsat_result(status, solver, x, num_item, action_dim, costs, values
             return selected, get_cost(costs, selected), get_value(values, selected)
     else:
         print("최적 해를 찾지 못했습니다.")
-        return None
+        raise ValueError("No optimal solution found.")
 
-def solve_cost_constraint(problem, cost_constraint, value_weights=None):
+def solve_cost_constraint(problem, cost_constraint, value_weights=None, allow_nothing_strategy=False):
     """
     CP-SAT 솔버를 사용하여 비용 제약 문제를 해결합니다.
 
@@ -91,6 +98,7 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
         problem: 문제 딕셔너리 {"cost": DataFrame, "value": [DataFrame...]}
         cost_constraint: 최대 비용 제약
         value_weights: 가치 차원에 대한 가중치. None인 경우 균등 분배
+        allow_nothing_strategy: 아무것도 하지 않음 전략을 허용할지 여부. 현상유지 작전이 없을 경우 True로 설정해야 함.
 
     Returns:
         (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 총 가치, 경과 시간
@@ -101,7 +109,7 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     num_item, action_dim = costs.shape
 
     # 솔버 초기화 및 변수 설정
-    model, x = _init_cpsat_solver(num_item, action_dim)
+    model, x = _init_cpsat_solver(num_item, action_dim, allow_nothing_strategy)
 
     # 비용 제약 조건
     model.Add(
@@ -135,13 +143,14 @@ def solve_cost_constraint(problem, cost_constraint, value_weights=None):
     # 결과 처리
     return *_process_cpsat_result(status, solver, x, num_item, action_dim, costs, values, value_weights, True), elapsed_time
 
-def solve_reliability_constraint(problem, reliability_constraint):
+def solve_reliability_constraint(problem, reliability_constraint, allow_nothing_strategy=False):
     """
     CP-SAT 솔버를 사용하여 신뢰도 제약 문제를 해결합니다.
 
     Args:
         problem: 문제 딕셔너리 {"cost": DataFrame, "value": [DataFrame...]}
         reliability_constraint: 각 가치 차원별 최소 요구 신뢰도
+        allow_nothing_strategy: 아무것도 하지 않음 전략을 허용할지 여부. 현상유지 작전이 없을 경우 True로 설정해야 함.
 
     Returns:
         (selected, cost, value, elapsed_time): 선택된 전략, 총 비용, 가치 리스트, 경과 시간
@@ -155,18 +164,25 @@ def solve_reliability_constraint(problem, reliability_constraint):
     num_item, action_dim = costs.shape
 
     # 솔버 초기화 및 변수 설정
-    model, x = _init_cpsat_solver(num_item, action_dim)
+    model, x = _init_cpsat_solver(num_item, action_dim, allow_nothing_strategy)
 
     # 신뢰도 제약 조건
     if len(reliability_constraint) != values[0].shape[0]:
         raise ValueError(
             f"len(reliability_constraint) must be equal to value_dim. \n{len(reliability_constraint)} != {values[0].shape[0]}")
 
-    for k in range(len(reliability_constraint)):
-        model.Add(
-            sum(int(values[i].iloc[k, j] * CP_SAT_COEF) * x[i][j] for i in range(num_item) for j in range(action_dim))
-            >= int(reliability_constraint[k] * CP_SAT_COEF)
-        )
+    try:
+        for k in range(len(reliability_constraint)):
+            model.Add(
+                sum(int(values[i].iloc[k, j] * CP_SAT_COEF) * x[i][j] for i in range(num_item) for j in range(action_dim))
+                >= int(reliability_constraint[k] * CP_SAT_COEF)
+            )
+    except IndexError as e:
+        raise IndexError(f"{e}"
+                         f"비용테이블과 가치테이블에 존재하는 장치의 수가 일치하지 않을 수 있습니다.\n"
+                         f"비용테이블의 장치: {len(costs.index.tolist())}\n"
+                         f"가치테이블의 장치: {len([values[i].index.tolist() for i in range(len(values))])}\n"
+                         f"위 두 값이 일정하지 않을 경우, 입력 테이블의 범위가 잘못 설정되었을 수 있습니다.\n")
 
     # 비용을 최소화하는 목적 함수
     objective_expr = sum(

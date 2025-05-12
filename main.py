@@ -45,6 +45,10 @@ def main():
         print("'현상유지' 전략을 추가합니다.")
         problem = add_nothing_strategy(problem)
 
+    else:
+        print("'현상유지' 전략을 추가하지 않습니다.")
+        print("아무 전략도 선택하지 않은 경우, 비용과 가치가 0인 '현상유지' 전략으로 취급합니다.")
+
     # 솔버 실행
     print(f"{solver_type} 솔버로 {problem_type} 문제를 해결합니다...")
     start_time = time.time()
