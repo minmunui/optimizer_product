@@ -29,7 +29,6 @@ def _init_cpsat_solver(num_item, action_dim, allow_zero_strategy=False):
         # 전략 선택하지 않음으로 "현상유지" 전략을 구현
         for i in range(num_item):
             model.Add(sum(x[i][j] for j in range(action_dim)) <= 1)
-            model.Add(x[i][0] == 0)
     else:
         # 하나의 item은 하나의 전략만 선택할 수 있음
         for i in range(num_item):
