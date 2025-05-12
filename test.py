@@ -1,6 +1,8 @@
+import pandas as pd
+
 import src.solver.cpsat as cpsat
 import src.solver.scip as scip
-from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
+from src.problem.strategy import make_random_problem
 
 for n_item in [100, 300, 500, 1000, 2000]:
 
