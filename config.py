@@ -17,14 +17,14 @@ DEFAULT_CONFIG = {
         # 사용할 솔버의 종류 (SCIP 또는 CP-SAT)
         "type": "SCIP",
         # 문제의 종류 (비용 제약 -> "cost_constraint" 또는 신뢰도 제약 -> "reliability_constraint")
-        "problem_type": "cost_constraint",
+        "problem_type": "reliability_constraint",
         # 비용 제약문제일 경우 최대 비용 제약, 신뢰도 제약문제일 경우 사용되지 않음.
         "cost_constraint": 1000,
         # 비용 제약문제일 경우 가치 차원에 대한 가중치.
         "value_weights": [1.0, 1.0, 1.0],
 
         # 신뢰도 제약문제일 경우 각 가치 차원별 최소 요구 신뢰도
-        "reliability_constraint": [150, 0.5, 0.5]
+        "reliability_constraint": [0.03, 10, 1000]
     },
     "output": {
         # 솔루션을 저장할 엑셀 파일 경로
