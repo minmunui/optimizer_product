@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: 현재 스크립트 경로로 이동
+:: change directory to the location of this script
 cd /D "%~dp0"
 
 echo =========================================================================
@@ -12,20 +12,20 @@ echo.
 echo =========================================================================
 echo.
 
-:: conda 환경 비활성화
+:: deactivate conda environment if it exists
 (call conda deactivate && call conda deactivate && call conda deactivate) 2>nul
 
-:: 가상환경 디렉토리 지정
+:: set directory for virtual environment
 set VENV_DIR=%cd%\venv
 
-:: Python 설치 여부 확인
+:: check if Python is installed
 where python >nul 2>&1
 if errorlevel 1 (
     echo Python does not exist.
     goto end
 )
 
-:: 가상환경이 없는 경우 생성
+:: check if virtual environment already exists
 if not exist "%VENV_DIR%\Scripts\python.exe" (
     echo Creating virtual environment...
     python -m venv "%VENV_DIR%" || (
@@ -35,18 +35,16 @@ if not exist "%VENV_DIR%\Scripts\python.exe" (
     echo Virtual environment created at %VENV_DIR%
 )
 
-:: 가상환경 활성화
+:: activate virtual environment
 call "%VENV_DIR%\Scripts\activate.bat"
 
-:: 필요한 패키지 설치
+:: install required packages
 echo Installing required packages...
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt || (
     echo Could not install required packages.
     goto end
 )
-
-:: 스크립트 실행
 
 :end
 pause
