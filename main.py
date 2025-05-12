@@ -58,24 +58,28 @@ def main():
             solution, total_cost, total_value, solve_time = scip.solve_cost_constraint(
                 problem,
                 cost_constraint=cost_constraint,
-                value_weights=value_weights
+                value_weights=value_weights,
+                allow_zero_strategy=not add_nothing
             )
         else:  # reliability_constraint
             solution, total_cost, total_value, solve_time = scip.solve_reliability_constraint(
                 problem,
-                reliability_constraint=reliability_constraint
+                reliability_constraint=reliability_constraint,
+                allow_zero_strategy=not add_nothing
             )
     else:  # CP-SAT
         if problem_type == 'cost_constraint':
             solution, total_cost, total_value, solve_time = cpsat.solve_cost_constraint(
                 problem,
                 cost_constraint=cost_constraint,
-                value_weights=value_weights
+                value_weights=value_weights,
+                allow_zero_strategy=not add_nothing
             )
         else:  # reliability_constraint
             solution, total_cost, total_value, solve_time = cpsat.solve_reliability_constraint(
                 problem,
-                reliability_constraint=reliability_constraint
+                reliability_constraint=reliability_constraint,
+                allow_zero_strategy=not add_nothing
             )
 
     # 결과 출력
