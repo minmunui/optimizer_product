@@ -227,28 +227,3 @@ def get_start_col(cell: str) -> int:
             result += char
 
     return ord(result) - ord("A") + 1
-
-def main():
-    problem = read_problem_from_excel("data/data.xlsx", cost_range="N2:Q42", value_range="A1:J42")
-    cost = problem["cost"]
-    value = problem["value"]
-    cost, value = add_nothing_strategy(cost, value)
-    print("비용 데이터:")
-    print(cost)
-    print("\n가치 데이터:")
-    for i, v in enumerate(value):
-        print(f"Item {i}:")
-        print(v)
-        print()
-
-    write_solution_to_excel(
-        file_path="data/data.xlsx",
-        sheet_name="Solution",
-        start_cell="A1",
-        problem=problem,
-        solution=[3 for i in range(len(cost))]
-    )
-
-
-if __name__ == "__main__":
-    main()
