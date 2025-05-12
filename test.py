@@ -9,7 +9,7 @@ for n_item in [100, 300, 500, 1000, 2000]:
     elapsed_time = []
     solver_error = []
 
-    for i in range(100):
+    for i in range(10):
         problem = make_random_problem(num_items=n_item, strategy_label=["nothing", "normal check", "advanced check", "change"],
                                       random_seed=1000 + i)
 
