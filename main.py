@@ -1,76 +1,90 @@
 import time
-
-import pandas as pd
-from openpyxl.utils.datetime import time_to_days
+from config import DEFAULT_CONFIG
 
 import src.solver.cpsat as cpsat
 import src.solver.scip as scip
 from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
-from src.problem.strategy import display_problem, make_random_problem
 
-# problem = read_problem_from_excel("data/data.xlsx", cost_range="N2:Q42", value_range="A1:J42")
-# problem = add_nothing_strategy(problem)
+def main():
+    config = DEFAULT_CONFIG
 
-for n_item in [30, 40, 60, 70]:
+    # 입력 설정 가져오기
+    input_config = config.get('input', {})
+    file_path = input_config.get('file_path', "data/200528_SK 계통(표준모델 적용).xlsm")
+    cost_range = input_config.get('cost_range', "Z3:AC49")
+    cost_sheet = input_config.get('cost_sheet', "04. reliability parameter for 3")
+    value_range = input_config.get('value_range', "A24:J71")
+    value_sheet = input_config.get('value_sheet', "05. results")
+    add_nothing = input_config.get('add_nothing_strategy', True)
 
-    elapsed_time = []
-    solver_error = []
+    # 솔버 설정 가져오기
+    solver_config = config.get('solver', {})
+    solver_type = solver_config.get('type', 'SCIP')
+    problem_type = solver_config.get('problem_type', 'cost_constraint')
+    cost_constraint = solver_config.get('cost_constraint', 1000)
+    value_weights = solver_config.get('value_weights', [1.0, 1.0, 1.0])
+    reliability_constraint = solver_config.get('reliability_constraint', [150, 0.5, 0.5])
 
-    for i in range(100):
-        problem = make_random_problem(num_items=n_item, strategy_label=["nothing", "normal check", "advanced check", "change"],
-                                      random_seed=1000 + i)
+    # 출력 설정 가져오기
+    output_config = config.get('output', {})
+    output_file = output_config.get('file_path', 'data/solution.xlsx')
+    output_sheet = output_config.get('sheet_name', f"{solver_type.lower()}_{problem_type}")
 
-        # display_problem(problem)
+    # 문제 읽기
+    print(f"Excel 파일 {file_path}에서 문제를 읽는 중...")
+    problem = read_problem_from_excel(
+        file_path,
+        cost_range=cost_range,
+        cost_sheet=cost_sheet,
+        value_range=value_range,
+        value_sheet=value_sheet
+    )
 
-        sol_scip_cost, total_cost, total_value, t_scip_cost = (
-            scip.solve_cost_constraint(problem, cost_constraint=1000, value_weights=None))
-        print(f"SCIP Cost Constraint: {i}")
-        print(f"Selected: {sol_scip_cost}")
-        print(f"Total Cost: {total_cost}")
-        print(f"Value : {total_value}")
+    # 현상유지 전략 추가
+    if add_nothing:
+        print("'현상유지' 전략을 추가합니다.")
+        problem = add_nothing_strategy(problem)
 
-        sol_cpsat_cost, total_cost, total_value, t_cpsat_cost = (
-            cpsat.solve_cost_constraint(problem, cost_constraint=1000, value_weights=None))
-        print(f"CP-SAT Cost Constraint: {i}")
-        print(f"Selected: {sol_cpsat_cost}")
-        print(f"Total Cost: {total_cost}")
-        print(f"Value : {total_value}")
+    # 솔버 실행
+    print(f"{solver_type} 솔버로 {problem_type} 문제를 해결합니다...")
+    start_time = time.time()
 
-        sol_scip_reliability, total_cost, total_value, t_scip_reliability = (
-            scip.solve_reliability_constraint(problem, reliability_constraint=[5*n_item, 5*n_item, 5*n_item]))
-        print(f"SCIP Reliability Constraint: {i}")
-        print(f"Selected: {sol_scip_reliability}")
-        print(f"Total Cost: {total_cost}")
-        print(f"Value : {total_value}")
+    if solver_type.upper() == 'SCIP':
+        if problem_type == 'cost_constraint':
+            solution, total_cost, total_value, solve_time = scip.solve_cost_constraint(
+                problem,
+                cost_constraint=cost_constraint,
+                value_weights=value_weights
+            )
+        else:  # reliability_constraint
+            solution, total_cost, total_value, solve_time = scip.solve_reliability_constraint(
+                problem,
+                reliability_constraint=reliability_constraint
+            )
+    else:  # CP-SAT
+        if problem_type == 'cost_constraint':
+            solution, total_cost, total_value, solve_time = cpsat.solve_cost_constraint(
+                problem,
+                cost_constraint=cost_constraint,
+                value_weights=value_weights
+            )
+        else:  # reliability_constraint
+            solution, total_cost, total_value, solve_time = cpsat.solve_reliability_constraint(
+                problem,
+                reliability_constraint=reliability_constraint
+            )
 
-        sol_cpsat_reliability, total_cost, total_value, t_cpsat_reliability = (
-            cpsat.solve_reliability_constraint(problem, reliability_constraint=[5*n_item, 5*n_item, 5*n_item]))
-        print(f"CP-SAT Reliability Constraint: {i}")
-        print(f"Selected: {sol_cpsat_reliability}")
-        print(f"Total Cost: {total_cost}")
-        print(f"Value : {total_value}")
+    # 결과 출력
+    print("\n== 최적화 결과 ==")
+    print(f"선택된 전략: {solution}")
+    print(f"총 비용: {total_cost}")
+    print(f"총 가치: {total_value}")
+    print(f"해결 시간: {solve_time:.4f}초")
+    print(f"총 실행 시간: {time.time() - start_time:.4f}초")
 
-        print(f"Elapsed Time: {t_scip_cost}, {t_scip_reliability}, {t_cpsat_cost}, {t_cpsat_reliability}")
-        print()
-        print()
+    # 결과 저장
+    print(f"\n결과를 {output_file} 파일의 {output_sheet} 시트에 저장합니다.")
+    write_solution_to_excel(output_file, sheet_name=output_sheet, problem=problem, solution=solution)
 
-        solver_error.append([sol_scip_cost == sol_cpsat_cost, sol_cpsat_reliability == sol_scip_reliability])
-
-        elapsed_time.append([t_scip_cost, t_cpsat_cost, t_scip_reliability, t_cpsat_reliability])
-
-        pd.DataFrame(elapsed_time, columns=["scip_cost", "cpsat_cost", "scip_reliability", "cpsat_reliability"]).to_excel(
-            f"data/elapsed_time_{n_item}.xlsx", index=False)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="cpsat_cost_constraint", problem=problem,
-    #                         solution=sol_cpsat_cost)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="cpsat_reliability_constraint", problem=problem,
-    #                         solution=sol_cpsat_reliability)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="scip_cost_constraint", problem=problem,
-    #                         solution=sol_scip_cost)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="scip_reliability_constraint", problem=problem,
-    #                         solution=sol_scip_reliability)
-        for i, times in enumerate(elapsed_time):
-            print(f"{i}: {[f"{t:.4f}" for t in times]} sec : {solver_error[i]}")
+if __name__ == "__main__":
+    main()
