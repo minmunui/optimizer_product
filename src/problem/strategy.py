@@ -45,7 +45,8 @@ def make_random_problem(num_items: int = 50,
                         value_dimension: int = 3,
                         problem_cost: float = 1000,
                         cost_ratio: float = 2.0,
-                        random_seed: int = 42
+                        random_seed: int = 42,
+                        allow_zero_strategy: bool = False,
                         ):
     """
     랜덤한 유지보수전략 최적화 문제를 생성합니다.
@@ -61,6 +62,7 @@ def make_random_problem(num_items: int = 50,
         problem_cost: 문제 총 비용 스케일링 기준값
         cost_ratio: 비용 비율 조정 계수
         random_seed: 랜덤 시드 값
+        allow_zero_strategy: 아무것도 하지 않음 전략을 허용할지 여부. 현상유지 작전이 없을 경우 True로 설정해야 함.
 
     Returns:
         생성된 문제를 담은 딕셔너리 {"cost": DataFrame, "value": [DataFrame...]}
@@ -70,9 +72,14 @@ def make_random_problem(num_items: int = 50,
     """
     random.seed(random_seed)
 
-    costs = [[0] + sorted([random.uniform(*cost_range) for _ in range(strategy_count - 1)]) for _ in range(num_items)]
-    values = [[[0] + sorted([random.uniform(*value_range) for _ in range(strategy_count - 1)]) for _ in
-               range(value_dimension)] for _ in range(num_items)]
+    if allow_zero_strategy:
+        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count)]) for _ in range(num_items)]
+        values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count)]) for _ in
+                   range(value_dimension)] for _ in range(num_items)]
+    else:
+        costs = [[0] + sorted([random.uniform(*cost_range) for _ in range(strategy_count - 1)]) for _ in range(num_items)]
+        values = [[[0] + sorted([random.uniform(*value_range) for _ in range(strategy_count - 1)]) for _ in
+                   range(value_dimension)] for _ in range(num_items)]
 
     values = np.array(values)
 
