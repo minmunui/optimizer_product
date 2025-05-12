@@ -73,12 +73,13 @@ def make_random_problem(num_items: int = 50,
     random.seed(random_seed)
 
     if allow_zero_strategy:
-        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count)]) for _ in range(num_items)]
-        values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count)]) for _ in
+        # 각 아이템에 대해 전략을 랜덤하게 생성, 비용과 가치는 내림차순으로 정렬
+        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count)], reverse=True) for _ in range(num_items)]
+        values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count)], reverse=True) for _ in
                    range(value_dimension)] for _ in range(num_items)]
     else:
-        costs = [[0] + sorted([random.uniform(*cost_range) for _ in range(strategy_count - 1)]) for _ in range(num_items)]
-        values = [[[0] + sorted([random.uniform(*value_range) for _ in range(strategy_count - 1)]) for _ in
+        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count - 1)] + [0], reverse=True) for _ in range(num_items)]
+        values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count - 1)] + [0], reverse=True) for _ in
                    range(value_dimension)] for _ in range(num_items)]
 
     values = np.array(values)
