@@ -4,7 +4,7 @@ import src.solver.cpsat as cpsat
 import src.solver.scip as scip
 from src.problem.strategy import make_random_problem
 
-for n_item in [100, 300, 500, 1000, 2000]:
+for n_item in [30, 50, 70, 100, 300, 500, 1000, 1500]:
 
     elapsed_time = []
     solver_error = []
@@ -53,17 +53,6 @@ for n_item in [100, 300, 500, 1000, 2000]:
 
         pd.DataFrame(elapsed_time, columns=["scip_cost", "cpsat_cost", "scip_reliability", "cpsat_reliability"]).to_excel(
             f"data/elapsed_time_{n_item}.xlsx", index=False)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="cpsat_cost_constraint", problem=problem,
-    #                         solution=sol_cpsat_cost)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="cpsat_reliability_constraint", problem=problem,
-    #                         solution=sol_cpsat_reliability)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="scip_cost_constraint", problem=problem,
-    #                         solution=sol_scip_cost)
-    #
-    # write_solution_to_excel("data/solution.xlsx", sheet_name="scip_reliability_constraint", problem=problem,
-    #                         solution=sol_scip_reliability)
+
         for i, times in enumerate(elapsed_time):
             print(f"{i}: {[f"{t:.4f}" for t in times]} sec : {solver_error[i]}")
