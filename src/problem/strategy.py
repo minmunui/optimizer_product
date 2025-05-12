@@ -232,7 +232,7 @@ def get_cost(costs: pd.DataFrame, solution: list[int] | list[list[bool]]):
     if type(solution[0]) is list:
         solution = [solution[i].index(True) for i in range(len(solution))]
 
-    return sum(costs.iloc[i, solution[i]] for i in range(len(solution)))
+    return sum(costs.iloc[i, solution[i]] if solution[i] != -1 else 0 for i in range(len(solution)))
 
 
 def display_solution(problem: dict, solution: list[int] | list[list[bool]], weights: list[float] = None):
