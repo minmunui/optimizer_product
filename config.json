@@ -1,0 +1,29 @@
+{
+  "input": {
+    "file_path": "data/200528_SK 계통(표준모델 적용).xlsm",
+    "cost_range": "Z3:AC49",
+    "cost_sheet": "04. reliability parameter for 3",
+    "value_range": "A24:J71",
+    "value_sheet": "05. results",
+    "add_nothing_strategy": true
+  },
+  "solver": {
+    "type": "SCIP",
+    "problem_type": "cost_constraint",
+    "cost_constraint": 1000,
+    "value_weights": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "reliability_constraint": [
+      150,
+      0.5,
+      0.5
+    ]
+  },
+  "output": {
+    "file_path": "data/solution.xlsx",
+    "sheet_name": "scip_cost_constraint"
+  }
+}

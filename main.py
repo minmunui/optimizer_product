@@ -1,12 +1,15 @@
 import time
-from config import DEFAULT_CONFIG
 
 import src.solver.cpsat as cpsat
 import src.solver.scip as scip
 from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
+import json
 
 def main():
-    config = DEFAULT_CONFIG
+
+    # JSON 파일에서 config 불러오기
+    with open('config.json', 'r', encoding='utf-8') as f:
+        config = json.load(f)
 
     # 입력 설정 가져오기
     input_config = config.get('input', {})
