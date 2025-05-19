@@ -248,7 +248,7 @@ class OptimizationUI(QMainWindow):
     def create_data_table(self):
         # 데이터 테이블
         self.data_table = QTableWidget(8, 4)
-        self.data_table.setHorizontalHeaderLabels(["설비", "고장", "정밀점검", "단순점검"])
+        self.data_table.setHorizontalHeaderLabels(["설비", "교체", "정밀점검", "단순점검"])
 
         # 예시 데이터 추가
         sample_data = [
@@ -294,7 +294,7 @@ class OptimizationUI(QMainWindow):
         self.main_layout.addWidget(result_label)
 
         self.result_table = QTableWidget(9, 5)
-        self.result_table.setHorizontalHeaderLabels(["설비", "고장", "정밀점검", "보통점검", "최상유지"])
+        self.result_table.setHorizontalHeaderLabels(["설비", "고장", "정밀점검", "보통점검", "현상유지"])
 
         # 예시 설비명 추가
         for i in range(9):
@@ -467,9 +467,11 @@ class OptimizationUI(QMainWindow):
             # 설정 업데이트
             if data_type == "sensitivity":
                 self.config["input"]["file_path"] = file_path
+                self.config["input"]["value_sheet"] = sheet_name
                 self.config["input"]["value_range"] = cell_range
             else:
                 self.config["input"]["file_path"] = file_path
+                self.config["input"]["cost_sheet"] = sheet_name
                 self.config["input"]["cost_range"] = cell_range
 
         except Exception as e:
