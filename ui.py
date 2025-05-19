@@ -32,24 +32,26 @@ DEFAULT_CONFIG = {
     },
     "output": {
         "file_path": "data/solution.xlsx",
-        "sheet_name": "scip_cost_constraint"
+        "sheet_name": "scip_cost_constraint",
+        "cell": "A2"
     }
 }
 
-def load_config():
+
+def load_config(config_path: str = 'configs/config.json'):
     """config.json 파일에서 설정을 로드합니다."""
     try:
-        with open('config.json', 'r', encoding='utf-8') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"설정 파일 로드 오류: {e}, 기본 설정을 사용합니다.")
         return DEFAULT_CONFIG
 
 
-def save_config(config):
+def save_config(config: dict, config_path: str):
     """현재 설정을 config.json 파일에 저장합니다."""
     try:
-        with open('config.json', 'w', encoding='utf-8') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(config, f, ensure_ascii=False, indent=2)
         return True
     except Exception as e:
@@ -62,10 +64,45 @@ class OptimizationUI(QMainWindow):
         super().__init__()
 
         # config.json에서 설정 로드
+        self.config_path = None
         self.config = load_config()
 
         self.setWindowTitle("유지보수 전략 최적화")
         self.resize(900, 800)
+
+        # UI 요소들
+        # self.config_file_combo = QComboBox()
+        # self.config_load_button = QPushButton("configs 새로고침")
+        # self.solver_combo = QComboBox()
+        # self.problem_type_combo = QComboBox()
+        # self.cost_constraint_label = QLabel("비용 제약")
+        # self.cost_constraint_input = QLineEdit()
+        # self.sensitivity_weights_label = QLabel("민감도 가중치")
+        # self.sensitivity_weights = []
+        # self.sensitivity_constraint_frame = QFrame()
+        # self.sensitivity_labels = ["고장율", "ENS", "CIC"]
+        # self.sensitivity_constraints = []
+        # self.add_nothing_checkbox = QCheckBox("문제 해결 시 '현상유지' 전략 추가")
+        # self.sensitivity_radio = QRadioButton("민감도 미리보기")
+        # self.cost_radio = QRadioButton("비용 미리보기")
+        # self.sensitivity_frame = QFrame()
+        # self.sensitivity_file_input = QLineEdit()
+        # self.sensitivity_sheet_input = QLineEdit()
+        # self.sensitivity_range_input = QLineEdit()
+        # self.sensitivity_import_button = QPushButton("미리보기")
+        # self.cost_frame = QFrame()
+        # self.cost_file_input = QLineEdit()
+        # self.cost_sheet_input = QLineEdit()
+        # self.cost_range_input = QLineEdit()
+        # self.cost_import_button = QPushButton("미리보기")
+        # self.import_info = QLabel("")
+        # self.output_file_input = QLineEdit()
+        # self.output_sheet_input = QLineEdit()
+        # self.output_cell_input = QLineEdit()
+        # self.data_table = QTableWidget(8, 4)
+        # self.save_button = QPushButton("설정 저장")
+        # self.solve_button = QPushButton("풀이")
+        # self.result_table = QTableWidget(9, 5)
 
         # 메인 위젯과 레이아웃 설정
         self.central_widget = QWidget()
@@ -90,8 +127,57 @@ class OptimizationUI(QMainWindow):
         # 상태 업데이트
         self.update_constraint_visibility()
 
+    def on_config_file_selected(self, config_file):
+        """드롭다운에서 설정 파일 선택 시 호출되는 메서드"""
+        # 선택된 설정 파일 경로
+        config_path = f"./configs/{config_file}"
+        self.config_path = config_path
+
+        # 설정 파일 로드
+        self.config = load_config(config_path)
+
+        # UI에 설정 적용
+        self.apply_config_to_ui()
+
+    def load_configs(self):
+        # configs 폴더의 파일들 가져오기
+        import os
+
+        if os.path.exists("./configs"):
+            self.config_file_combo.clear()
+            config_files = [f for f in os.listdir("./configs") if f.endswith(".json")]
+            self.config_file_combo.addItems(config_files)
+        else:
+            self.config_file_combo.addItem("config.json")
+
     def create_settings_section(self):
         # 문제 설정 섹션
+        import_label = QLabel("설정 불러오기")
+        import_label.setStyleSheet("font-size: 16px; font-weight: bold;")
+        self.main_layout.addWidget(import_label)
+
+        configs_layout = QHBoxLayout()
+        configs_layout.addWidget(QLabel("설정 파일:"))
+
+        # 드롭다운 생성
+        self.config_file_combo = QComboBox()
+
+        self.load_configs()
+
+        self.config_file_combo.showPopup()
+        # 드롭다운 선택 이벤트 연결
+        self.config_file_combo.currentTextChanged.connect(self.on_config_file_selected)
+
+        configs_layout.addWidget(self.config_file_combo)
+
+        self.config_load_button = QPushButton("configs 새로고침")
+        self.config_load_button.setStyleSheet("background-color: #4CAF50; color: white; font-size: 14px;")
+        self.config_load_button.clicked.connect(lambda: self.load_configs())
+        configs_layout.addWidget(self.config_load_button)
+
+
+        self.main_layout.addLayout(configs_layout)
+
         settings_label = QLabel("문제 설정")
         settings_label.setStyleSheet("font-size: 16px; font-weight: bold;")
         self.main_layout.addWidget(settings_label)
@@ -157,8 +243,6 @@ class OptimizationUI(QMainWindow):
 
         self.main_layout.addLayout(settings_layout)
 
-        self.main_layout.addLayout(settings_layout)
-
     def create_import_section(self):
         # 값 불러오기 섹션
         import_label = QLabel("값 미리보기")
@@ -200,6 +284,7 @@ class OptimizationUI(QMainWindow):
         sensitivity_layout.addWidget(self.sensitivity_range_input)
 
         self.sensitivity_import_button = QPushButton("미리보기")
+        self.sensitivity_import_button.setStyleSheet("background-color: #4CAF50; color: white; font-size: 14px;")
         self.sensitivity_import_button.clicked.connect(lambda: self.load_data("sensitivity"))
         sensitivity_layout.addWidget(self.sensitivity_import_button)
 
@@ -224,11 +309,16 @@ class OptimizationUI(QMainWindow):
         self.cost_range_input.setText(self.config["input"]["cost_range"])
         cost_layout.addWidget(self.cost_range_input)
 
-        self.cost_import_button = QPushButton("불러오기")
+        self.cost_import_button = QPushButton("미리보기")
+        self.cost_import_button.setStyleSheet("background-color: #4CAF50; color: white; font-size: 14px;")
         self.cost_import_button.clicked.connect(lambda: self.load_data("cost"))
         cost_layout.addWidget(self.cost_import_button)
 
         self.main_layout.addWidget(self.cost_frame)
+
+        self.import_info = QLabel("")
+        self.import_info.setStyleSheet("font-size: 12px; color: gray;")
+        self.main_layout.addWidget(self.import_info)
 
         # 초기 상태 설정
         self.update_import_section()
@@ -251,7 +341,12 @@ class OptimizationUI(QMainWindow):
         output_layout.addWidget(QLabel("결과 시트 이름:"), 1, 0)
         self.output_sheet_input = QLineEdit()
         self.output_sheet_input.setText(self.config["output"]["sheet_name"])
-        output_layout.addWidget(self.output_sheet_input, 1, 1, 1, 5)
+        output_layout.addWidget(self.output_sheet_input, 1, 1)
+
+        output_layout.addWidget(QLabel("결과 입력 셀"), 1, 2)
+        self.output_cell_input = QLineEdit()
+        self.output_cell_input.setText(self.config["output"].get("cell", "A2"))
+        output_layout.addWidget(self.output_cell_input, 1, 3)
 
         self.main_layout.addLayout(output_layout)
 
@@ -286,7 +381,7 @@ class OptimizationUI(QMainWindow):
         # 저장 버튼
         self.save_button = QPushButton("설정 저장")
         self.save_button.setStyleSheet("background-color: #4CAF50; color: white; padding: 10px; font-size: 14px;")
-        self.save_button.clicked.connect(self.save_current_config)
+        self.save_button.clicked.connect(lambda : self.save_current_config())
         button_layout.addWidget(self.save_button)
 
         # 풀이 버튼
@@ -308,7 +403,7 @@ class OptimizationUI(QMainWindow):
 
         # 예시 설비명 추가
         for i in range(9):
-            self.result_table.setItem(i, 0, QTableWidgetItem(f"Sub_System{i+1}"))
+            self.result_table.setItem(i, 0, QTableWidgetItem(f"Sub_System{i + 1}"))
 
         self.result_table.resizeColumnsToContents()
         self.main_layout.addWidget(self.result_table)
@@ -384,6 +479,7 @@ class OptimizationUI(QMainWindow):
         output_config = self.config.get("output", {})
         self.output_file_input.setText(output_config.get("file_path", "data/solution.xlsx"))
         self.output_sheet_input.setText(output_config.get("sheet_name", "scip_cost_constraint"))
+        self.output_cell_input.setText(output_config.get("cell", "A2"))
 
     def save_current_config(self):
         """현재 UI 설정을 config.json 파일에 저장합니다."""
@@ -416,9 +512,10 @@ class OptimizationUI(QMainWindow):
 
         self.config["output"]["file_path"] = self.output_file_input.text()
         self.config["output"]["sheet_name"] = self.output_sheet_input.text()
+        self.config["output"]["cell"] = self.output_cell_input.text()
 
         # 설정 저장
-        success = save_config(self.config)
+        success = save_config(self.config, self.config_path)
         if success:
             QMessageBox.information(self, "설정 저장", "설정이 config.json 파일에 저장되었습니다.")
         else:
@@ -555,7 +652,8 @@ class OptimizationUI(QMainWindow):
                 self.config["output"]["file_path"],
                 sheet_name=self.config["output"]["sheet_name"],
                 problem=self.problem,
-                solution=self.solution
+                solution=self.solution,
+                start_cell=self.config["output"]["cell"],
             )
 
             QMessageBox.information(self, "계산 완료",
@@ -602,6 +700,7 @@ class OptimizationUI(QMainWindow):
                     self.result_table.setItem(i, j, QTableWidgetItem(""))
 
         self.result_table.resizeColumnsToContents()
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
