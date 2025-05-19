@@ -189,6 +189,11 @@ class OptimizationUI(QMainWindow):
         self.sensitivity_file_input.setText(self.config["input"]["file_path"])
         sensitivity_layout.addWidget(self.sensitivity_file_input)
 
+        sensitivity_layout.addWidget(QLabel("시트명"))
+        self.sensitivity_sheet_input = QLineEdit()
+        self.sensitivity_sheet_input.setText(self.config["input"]["value_sheet"])
+        sensitivity_layout.addWidget(self.sensitivity_sheet_input)
+
         sensitivity_layout.addWidget(QLabel("범위 셀"))
         self.sensitivity_range_input = QLineEdit()
         self.sensitivity_range_input.setText(self.config["input"]["value_range"])
@@ -208,6 +213,11 @@ class OptimizationUI(QMainWindow):
         self.cost_file_input = QLineEdit()
         self.cost_file_input.setText(self.config["input"]["file_path"])
         cost_layout.addWidget(self.cost_file_input)
+
+        cost_layout.addWidget(QLabel("시트명"))
+        self.cost_sheet_input = QLineEdit()
+        self.cost_sheet_input.setText(self.config["input"]["cost_sheet"])
+        cost_layout.addWidget(self.cost_sheet_input)
 
         cost_layout.addWidget(QLabel("범위 셀"))
         self.cost_range_input = QLineEdit()
@@ -362,8 +372,10 @@ class OptimizationUI(QMainWindow):
         # 파일 경로 설정
         input_config = self.config.get("input", {})
         self.sensitivity_file_input.setText(input_config.get("file_path", ""))
+        self.sensitivity_sheet_input.setText(input_config.get("value_sheet", ""))
         self.sensitivity_range_input.setText(input_config.get("value_range", ""))
         self.cost_file_input.setText(input_config.get("file_path", ""))
+        self.cost_sheet_input.setText(input_config.get("cost_sheet", ""))
         self.cost_range_input.setText(input_config.get("cost_range", ""))
 
         input_config = self.config.get("input", {})
@@ -393,9 +405,11 @@ class OptimizationUI(QMainWindow):
         # 입력 파일 경로 저장
         if self.sensitivity_radio.isChecked():
             self.config["input"]["file_path"] = self.sensitivity_file_input.text()
+            self.config["input"]["value_sheet"] = self.sensitivity_sheet_input.text()
             self.config["input"]["value_range"] = self.sensitivity_range_input.text()
         else:
             self.config["input"]["file_path"] = self.cost_file_input.text()
+            self.config["input"]["cost_sheet"] = self.cost_sheet_input.text()
             self.config["input"]["cost_range"] = self.cost_range_input.text()
 
         self.config["input"]["add_nothing_strategy"] = self.add_nothing_checkbox.isChecked()
