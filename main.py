@@ -1,3 +1,4 @@
+import argparse
 import time
 
 import src.solver.cpsat as cpsat
@@ -5,12 +6,15 @@ import src.solver.scip as scip
 from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
 import json
 
-def main():
+def main(config_path='configs/config.json'):
 
     # JSON 파일에서 config 불러오기
-    with open('config.json', 'r', encoding='utf-8') as f:
-        config = json.load(f)
-
+    try:
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+    except FileNotFoundError:
+        print(f"설정 파일 '{config_path}'을 찾을 수 없습니다.")
+        return
     # 입력 설정 가져오기
     input_config = config.get('input', {})
     file_path = input_config.get('file_path', "data/200528_SK 계통(표준모델 적용).xlsm")
@@ -87,6 +91,19 @@ def main():
 
     # 결과 출력
     print("\n== 최적화 결과 ==")
+    print(f"문제 유형: {problem_type}")
+    print(f"솔버 유형: {solver_type}")
+
+    strategies = problem['cost'].columns.tolist()
+    if add_nothing:
+        print(f"선택된 전략: ", end="")
+        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(solution))]
+        print(f"{solution}")
+    else:
+        print(f"선택된 전략: -1 -> 현상유지 전략", end="\t")
+        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(solution))]
+        print(f"{solution}")
+
     print(f"선택된 전략: {solution}")
     print(f"총 비용: {total_cost}")
     print(f"총 가치: {total_value}")
@@ -98,4 +115,7 @@ def main():
     write_solution_to_excel(output_file, sheet_name=output_sheet, problem=problem, solution=solution)
 
 if __name__ == "__main__":
-    main()
+    arg_parser = argparse.ArgumentParser(description="최적화문제를 풀이하기 위한 Solver입니다")
+    arg_parser.add_argument('--config', type=str, default='configs/config.json', help='설정파일의 경로입니다.')
+    args = arg_parser.parse_args()
+    main(args.config)
