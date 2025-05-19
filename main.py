@@ -97,14 +97,15 @@ def main(config_path='configs/config.json'):
     strategies = problem['cost'].columns.tolist()
     if add_nothing:
         print(f"선택된 전략: ", end="")
-        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(solution))]
+        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(strategies))]
+        print()
         print(f"{solution}")
     else:
         print(f"선택된 전략: -1 -> 현상유지 전략", end="\t")
-        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(solution))]
+        [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(strategies))]
+        print()
         print(f"{solution}")
 
-    print(f"선택된 전략: {solution}")
     print(f"총 비용: {total_cost}")
     print(f"총 가치: {total_value}")
     print(f"해결 시간: {solve_time:.4f}초")
