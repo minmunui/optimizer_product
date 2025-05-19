@@ -1,0 +1,30 @@
+{
+  "input": {
+    "file_path": "data/data.xlsx",
+    "cost_range": "N2:Q48",
+    "cost_sheet": "Sheet1",
+    "value_range": "A1:J48",
+    "value_sheet": "Sheet1",
+    "add_nothing_strategy": true
+  },
+  "solver": {
+    "type": "SCIP",
+    "problem_type": "cost_constraint",
+    "cost_constraint": 19680.0,
+    "value_weights": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "reliability_constraint": [
+      0.09371,
+      416.23,
+      1775076798
+    ]
+  },
+  "output": {
+    "file_path": "data/data.xlsx",
+    "sheet_name": "Solution",
+    "cell": "F2"
+  }
+}
