@@ -29,7 +29,7 @@
 ```
 
 #### 가상환경이 실행되지 않는 경우 global 환경에 패키지를 설치 및 실행
-```angular2html
+```bash
 pip install -r requirements.txt
 ```
 
@@ -50,17 +50,65 @@ source venv/bin/activate
 ## 프로그램 사용법
 
 이 프로그램은 엑셀로부터 최적화문제를 읽어 OR-Tools를 이용하여 해결한 후 결과물을 엑셀로 출력합니다.
-`data/data.xlsx`를 통해 예제를 확인하십시오. `config.py`파일을 통해 문제, solver, 엑셀파일의 경로를 설정할 수 있습니다.
+`data/data.xlsx`를 통해 예제를 확인하십시오. `configs/config.json`파일을 통해 문제, solver, 엑셀파일의 경로를 설정할 수 있습니다.
 
-다른 설정을 원하신다면 `config.py`파일을 수정하여 사용하시면 됩니다. 기본 설정은 효성중공업의 실제 문제를 불러오고 문제를 풀이합니다. 단 실제 문제를 담은 엑셀파일은 보안상의 문제로 제공하지 않습니다. 
-예제 문제를 사용하고 싶다면, `main.py`파일의 두 번째 line을 아래와 같이 변경하여 다른 문제를 불러오도록 하십시오.
+편리한 사용을 위해서는 아래의 명령어를 사용해 간단한 gui를 사용할 수 있습니다.
+```bash
+python ui.py
+```
 
-```python
-# ./main.py
 
-# from config import DEFAULT_CONFIG
-# 위 부분을 아래와 같이 수정하여 다른 문제로 설정하도록 수정
-from config_demo import DEFAULT_CONFIG
+다른 설정을 원하신다면 `configs/`폴더에 새로운 설정을 `json`파일로 을 생성하면 됩니다. 기본 설정은 효성중공업의 실제 문제를 불러오고 문제를 풀이합니다. 단 실제 문제를 담은 엑셀파일은 보안상의 문제로 제공하지 않습니다. 
+예제 문제를 사용하고 싶다면, `configs/demo_config.json`를 사용하십시오. 아래는 `json`파일의 설정값에 대한 설명입니다.
+
+### `config.json` 설정하는 법
+```json
+{
+  "input": {
+    // 문제를 읽어올 엑셀파일의 경로
+    "file_path": "data/data.xlsx",
+    // 비용을 읽어올 엑셀파일의 범위, column이름을 포함한 범위입니다. ( data.xlsx파일을 기준으로 작성하였습니다. )
+    "cost_range": "N2:Q48", 
+    // 비용을 읽어올 엑셀파일의 시트
+    "cost_sheet": "Sheet1", 
+    // 가치(민감도)를 읽어올 엑셀파일의 범위, column이름을 포함한 범위입니다. ( data.xlsx파일을 기준으로 작성하였습니다. )
+    "value_range": "A1:J48",
+    // 가치(민감도)를 읽어올 엑셀파일의 시트
+    "value_sheet": "Sheet1", 
+    // 아무것도 하지 않는 전략을 추가할지 여부입니다. 
+    // true일 경우 모든 결정변수가 0일 때 현상유지를 의미합니다.
+    // false일 경우 현상유지를 의미하는 결정변수를 추가합니다.
+    "add_nothing_strategy": true 
+  },
+  "solver": {
+    // 사용할 solver의 종류입니다. SCIP, CP-SAT중 하나를 선택할 수 있습니다.
+    "type": "SCIP",
+    // 풀이할 문제의 종류입니다. cost_constraint, reliability_constraint중 하나를 선택할 수 있습니다.
+    "problem_type": "cost_constraint",
+    // 비용 제약문제의 제약조건입니다. cost_constraint일 경우 사용됩니다.
+    "cost_constraint": 19680.0,
+    // 비용 제약문제의 목적함수 가중치입니다. cost_constraint일 경우 사용됩니다.
+    "value_weights": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    // 신뢰도 제약문제의 민감도 제약조건입니다. reliability_constraint일 경우 사용됩니다.
+    "reliability_constraint": [
+      0.09371,
+      416.23,
+      1775076798
+    ]
+  },
+  "output": {
+    // 결과를 저장할 엑셀파일의 경로입니다.
+    "file_path": "data/data.xlsx",
+    // 결과를 저장할 엑셀파일의 시트입니다.
+    "sheet_name": "Solution",
+    // 결과를 저장할 범위의 좌상단 셀입니다.
+    "cell": "F2"
+  }
+}
 ```
 
 ## 효성의 실제 문제를 사용하고 싶다면
@@ -109,9 +157,9 @@ Workbooks.Open Filename:= _
 
 ### 4. 프로그램 실행
 
-`main.py`파일을 실행하여 프로그램을 실행합니다. `config.py`파일을 통해 설정할 수 있습니다. 
+`main.py`파일을 실행하여 프로그램을 실행합니다. `--config`속성을 통해 어떤 설정으로 문제를 풀이할 지 선택할 수 있습니다. config작성법에 대해서는 [위의 설정법](#configjson-설정하는-법)에서 확인하십시오.
 
 ```bash
-python main.py
+python main.py --config configs/demo_config.json
 ```
 
