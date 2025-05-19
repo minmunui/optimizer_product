@@ -2,6 +2,7 @@ import sys
 import json
 
 import openpyxl
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QLabel, QComboBox,
                                QLineEdit, QRadioButton, QPushButton, QTableWidget, QTableWidgetItem,
                                QVBoxLayout, QHBoxLayout, QGridLayout, QFrame, QMessageBox, QCheckBox)
@@ -704,6 +705,7 @@ class OptimizationUI(QMainWindow):
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
+    app.setWindowIcon(QIcon("docs/icon.png"))
     window = OptimizationUI()
     window.show()
     sys.exit(app.exec())
