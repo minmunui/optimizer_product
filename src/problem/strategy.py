@@ -162,7 +162,7 @@ def get_value_cost_constraint(problem: dict,
 def get_total_value(values: pd.DataFrame,
                     solution: list[int] | list[list[bool]],
                     value_weights: list[float] = None,
-                    ) -> float:
+                    ) -> list[float]:
     """
     주어진 문제와 솔루션에 대해 종합적인 가치를 계산합니다.
 
@@ -177,7 +177,7 @@ def get_total_value(values: pd.DataFrame,
     if value_weights is None:
         value_weights = [1.0 for _ in range(len(values[0].values.tolist()))]
 
-    return sum([value * value_weights[i] for i, value in enumerate(get_value(values, solution))])
+    return get_value(values, solution)
 
 
 def get_value(values: pd.DataFrame, solution: list[int] | list[list[bool]]) -> list[float]:
