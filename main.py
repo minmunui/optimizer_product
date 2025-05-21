@@ -6,8 +6,8 @@ import src.solver.scip as scip
 from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
 import json
 
-def main(config_path='configs/config.json'):
 
+def run_optimization(config_path='configs/config.json'):
     # JSON 파일에서 config 불러오기
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
@@ -23,6 +23,7 @@ def main(config_path='configs/config.json'):
     value_range = input_config.get('value_range', "A24:J71")
     value_sheet = input_config.get('value_sheet', "05. results")
     add_nothing = input_config.get('add_nothing_strategy', True)
+    normalize = input_config.get('value_normalization', False)
 
     # 솔버 설정 가져오기
     solver_config = config.get('solver', {})
@@ -36,6 +37,7 @@ def main(config_path='configs/config.json'):
     output_config = config.get('output', {})
     output_file = output_config.get('file_path', 'data/solution.xlsx')
     output_sheet = output_config.get('sheet_name', f"{solver_type.lower()}_{problem_type}")
+    output_cell = output_config.get('cell', 'A2')
 
     # 문제 읽기
     print(f"Excel 파일 {file_path}에서 문제를 읽는 중...")
@@ -56,38 +58,48 @@ def main(config_path='configs/config.json'):
         print("'현상유지' 전략을 추가하지 않습니다.")
         print("아무 전략도 선택하지 않은 경우, 비용과 가치가 0인 '현상유지' 전략으로 취급합니다.")
 
+    if problem_type == 'cost_constraint':
+        if normalize:
+            print("민감도 정규화를 진행합니다.")
+            # 각 아이템에 대한 최댓값을 구함 value_maxes의 각 아이템은 [고장률 최댓값, ENS 최댓값, CIC 최댓값]을 포함
+            value_maxes = [item_table.max(axis=1).tolist() for item_table in problem["value"]]
+            # 고장률, ENS, CIC의 최댓값을 구함
+            max_values = [max(item) for item in zip(*value_maxes)]
+
+            # weight를 최댓값으로 나누어 정규화
+            for i in range(len(value_weights)):
+                value_weights[i] = value_weights[i] / max_values[i]
+        else:
+            print("민감도 정규화를 진행하지 않습니다.")
+
     # 솔버 실행
     print(f"{solver_type} 솔버로 {problem_type} 문제를 해결합니다...")
     start_time = time.time()
 
     if solver_type.upper() == 'SCIP':
-        if problem_type == 'cost_constraint':
-            solution, total_cost, total_value, solve_time = scip.solve_cost_constraint(
-                problem,
-                cost_constraint=cost_constraint,
-                value_weights=value_weights,
-                allow_zero_strategy=not add_nothing
-            )
-        else:  # reliability_constraint
-            solution, total_cost, total_value, solve_time = scip.solve_reliability_constraint(
-                problem,
-                reliability_constraint=reliability_constraint,
-                allow_zero_strategy=not add_nothing
-            )
-    else:  # CP-SAT
-        if problem_type == 'cost_constraint':
-            solution, total_cost, total_value, solve_time = cpsat.solve_cost_constraint(
-                problem,
-                cost_constraint=cost_constraint,
-                value_weights=value_weights,
-                allow_zero_strategy=not add_nothing
-            )
-        else:  # reliability_constraint
-            solution, total_cost, total_value, solve_time = cpsat.solve_reliability_constraint(
-                problem,
-                reliability_constraint=reliability_constraint,
-                allow_zero_strategy=not add_nothing
-            )
+        solver = scip
+    elif solver_type.upper() == 'CP-SAT':
+        solver = cpsat
+    else:
+        raise ValueError(f"지원하지 않는 솔버 유형입니다: {solver_type}. 지원되는 솔버는 'SCIP'와 'CP-SAT'입니다.")
+
+    if problem_type not in ['cost_constraint', 'reliability_constraint']:
+        raise ValueError(
+            f"지원하지 않는 문제 유형입니다: {problem_type}. 지원되는 문제 유형은 'cost_constraint'와 'reliability_constraint'입니다.")
+
+    if problem_type == 'cost_constraint':
+        solution, total_cost, total_value, solve_time = solver.solve_cost_constraint(
+            problem,
+            cost_constraint=cost_constraint,
+            value_weights=value_weights,
+            allow_zero_strategy=not add_nothing
+        )
+    else:  # reliability_constraint
+        solution, total_cost, total_value, solve_time = solver.solve_reliability_constraint(
+            problem,
+            reliability_constraint=reliability_constraint,
+            allow_zero_strategy=not add_nothing
+        )
 
     # 결과 출력
     print("\n== 최적화 결과 ==")
@@ -96,11 +108,13 @@ def main(config_path='configs/config.json'):
 
     strategies = problem['cost'].columns.tolist()
     if add_nothing:
+        # 선택된 전략: 0 -> 교체  1 -> 정밀점검   2 -> 보통점검   3 -> 현상유지
         print(f"선택된 전략: ", end="")
         [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(strategies))]
         print()
         print(f"{solution}")
     else:
+        # 선택된 전략: -1 -> 현상유지 전략        0 -> 교체       1 -> 정밀점검   2 -> 보통점검
         print(f"선택된 전략: -1 -> 현상유지 전략", end="\t")
         [print(f"{i} -> {strategies[i]}", end='\t') for i in range(len(strategies))]
         print()
@@ -113,10 +127,17 @@ def main(config_path='configs/config.json'):
 
     # 결과 저장
     print(f"\n결과를 {output_file} 파일의 {output_sheet} 시트에 저장합니다.")
-    write_solution_to_excel(output_file, sheet_name=output_sheet, problem=problem, solution=solution)
+    write_solution_to_excel(output_file,
+                            sheet_name=output_sheet,
+                            problem=problem,
+                            solution=solution,
+                            start_cell=output_cell
+                            )
+    return solution, total_cost, total_value, solve_time
+
 
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(description="최적화문제를 풀이하기 위한 Solver입니다")
     arg_parser.add_argument('--config', type=str, default='configs/config.json', help='설정파일의 경로입니다.')
     args = arg_parser.parse_args()
-    main(args.config)
+    run_optimization(args.config)
