@@ -118,7 +118,8 @@ def write_solution_to_excel(file_path: str = "output_rel.xlsx",
                             sheet_name: str = "06. Maintenance Strategy",
                             start_cell: str = "A2",
                             problem: dict = None,
-                            solution: list[int] | list[list[bool]] = None
+                            solution: list[int] | list[list[bool]] = None,
+                            add_nothing: bool = True,
                             ) -> None:
     """
     최적화문제의 결과를 엑셀에 저장합니다. 시작 셀로부터 우하단으로 채워나갑니다. 행은 아이템을, 열은 전략을 나타냅니다.
@@ -129,7 +130,7 @@ def write_solution_to_excel(file_path: str = "output_rel.xlsx",
         start_cell: 시작 셀 위치, 해당 셀부터 우하단으로 채워나갑니다.
         problem: dict {"cost": DataFrame, "value": list[DataFrame]}
         solution: 각 아이템에 대해 선택된 전략 인덱스 또는 불리언 리스트
-
+        add_nothing: True인 경우, '현상유지' 전략을 계산하여 추가합니다. 모든 전략을 선택하지 않은 경우, 비용과 가치가 0인 '현상유지' 전략으로 취급합니다.
     Returns:
         DataFrame: 비용 데이터
     """
@@ -172,6 +173,12 @@ def write_solution_to_excel(file_path: str = "output_rel.xlsx",
 
     for col in range(0, num_strategy):
         ws.cell(row=label_row, column=col + label_col + 1, value=strategy_label[col])
+
+    if not add_nothing:
+        print("솔루션 저장에 '현상유지' 전략을 별도로 추가합니다.")
+        ws.cell(row=label_row, column=label_col + num_strategy + 1, value="현상유지")
+        for row in range(0, num_item):
+            ws.cell(row=row + label_row + 1, column=label_col + num_strategy + 1, value=1 if solution[row] == -1 else 0)
 
     for i_item in range(0, num_item):
         for i_strategy in range(0, num_strategy):
@@ -227,3 +234,30 @@ def get_start_col(cell: str) -> int:
             result += char
 
     return ord(result) - ord("A") + 1
+
+def read_solution(file_path: str,
+                  sheet_name: str = "06. Maintenance Strategy",
+                    start_cell: str = "A2",
+                    ) -> DataFrame:
+    """
+    엑셀 파일에서 솔루션을 읽어옵니다.
+    :param file_path: 솔루션을 읽어올 엑셀 파일 경로
+    :param sheet_name: 솔루션이 저장된 시트 이름
+    :param start_cell: 솔루션이 시작되는 셀 주소, 해당 셀에서 우하단으로 값이 없는 셀까지 읽어옵니다.
+    :return: DataFrame: 솔루션 데이터프레임
+    """
+    print(f"'{file_path}' 파일의 '{sheet_name}' 시트에서 솔루션을 읽어옵니다.")
+    wb = load_workbook(file_path, data_only=True)
+    ws = wb[sheet_name]
+    start_row = get_start_row(start_cell)
+    start_col = get_start_col(start_cell)
+    data = []
+    for row in ws.iter_rows(min_row=start_row, min_col=start_col):
+        data.append([cell.value for cell in row])
+    data = np.array(data)
+    data = pd.DataFrame(data)
+    data.columns = data.iloc[0]  # 첫 번째 행을 열 이름으로 설정
+    data = data[1:]  # 첫 번째 행 제거
+    data = data.reset_index(drop=True)  # 인덱스 초기화
+    data.set_index(data.columns[0], inplace=True)  # 첫 번째 열을 인덱스로 설정
+    return data

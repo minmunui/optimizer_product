@@ -15,6 +15,11 @@ def run_optimization(config_path='configs/config.json'):
     except FileNotFoundError:
         print(f"설정 파일 '{config_path}'을 찾을 수 없습니다.")
         return
+
+    print(f"설정 파일 '{config_path}'을 성공적으로 불러왔습니다.")
+    print("설정 내용:")
+    print(json.dumps(config, indent=4, ensure_ascii=False))
+
     # 입력 설정 가져오기
     input_config = config.get('input', {})
     file_path = input_config.get('file_path', "data/200528_SK 계통(표준모델 적용).xlsm")
@@ -23,7 +28,6 @@ def run_optimization(config_path='configs/config.json'):
     value_range = input_config.get('value_range', "A24:J71")
     value_sheet = input_config.get('value_sheet', "05. results")
     add_nothing = input_config.get('add_nothing_strategy', True)
-    normalize = input_config.get('value_normalization', False)
 
     # 솔버 설정 가져오기
     solver_config = config.get('solver', {})
@@ -32,6 +36,7 @@ def run_optimization(config_path='configs/config.json'):
     cost_constraint = solver_config.get('cost_constraint', 1000)
     value_weights = solver_config.get('value_weights', [1.0, 1.0, 1.0])
     reliability_constraint = solver_config.get('reliability_constraint', [150, 0.5, 0.5])
+    normalize = solver_config.get('value_normalization', False)
 
     # 출력 설정 가져오기
     output_config = config.get('output', {})
@@ -58,6 +63,7 @@ def run_optimization(config_path='configs/config.json'):
         print("'현상유지' 전략을 추가하지 않습니다.")
         print("아무 전략도 선택하지 않은 경우, 비용과 가치가 0인 '현상유지' 전략으로 취급합니다.")
 
+    print(f"문제 유형: {problem_type}")
     if problem_type == 'cost_constraint':
         if normalize:
             print("민감도 정규화를 진행합니다.")
@@ -69,6 +75,7 @@ def run_optimization(config_path='configs/config.json'):
             # weight를 최댓값으로 나누어 정규화
             for i in range(len(value_weights)):
                 value_weights[i] = value_weights[i] / max_values[i]
+            print(f"정규화된 가중치: {value_weights}")
         else:
             print("민감도 정규화를 진행하지 않습니다.")
 
@@ -131,7 +138,8 @@ def run_optimization(config_path='configs/config.json'):
                             sheet_name=output_sheet,
                             problem=problem,
                             solution=solution,
-                            start_cell=output_cell
+                            start_cell=output_cell,
+                            add_nothing=add_nothing,
                             )
     return solution, total_cost, total_value, solve_time
 
