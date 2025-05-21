@@ -11,6 +11,7 @@ from openpyxl.utils import column_index_from_string
 from openpyxl.utils.cell import coordinate_from_string
 
 import main
+from src.problem.io import read_solution
 
 # 기본 설정값 (config.json이 없을 경우 사용)
 DEFAULT_CONFIG = {
@@ -55,7 +56,7 @@ def save_config(config: dict, config_path: str):
         return True
     except Exception as e:
         print(f"설정 파일 저장 오류: {e}")
-        return False
+        raise e
 
 
 class OptimizationUI(QMainWindow):
@@ -63,7 +64,7 @@ class OptimizationUI(QMainWindow):
         super().__init__()
 
         # config.json에서 설정 로드
-        self.config_path = None
+        self.config_path = "configs/config.json"
         self.config = load_config()
 
         self.setWindowTitle("유지보수 전략 최적화")
@@ -130,6 +131,7 @@ class OptimizationUI(QMainWindow):
         """드롭다운에서 설정 파일 선택 시 호출되는 메서드"""
         # 선택된 설정 파일 경로
         config_path = f"./configs/{config_file}"
+        print(f"선택된 설정 파일: {config_path}")
         self.config_path = config_path
 
         # 설정 파일 로드
@@ -431,7 +433,53 @@ class OptimizationUI(QMainWindow):
             self.result_table.setItem(i, 0, QTableWidgetItem(f"Sub_System{i + 1}"))
 
         self.result_table.resizeColumnsToContents()
-        self.main_layout.addWidget(self.result_table)
+        # 결과 테이블을 왼쪽에 놓고 결과 정보는 오른쪽에 배치
+        result_layout = QHBoxLayout()
+
+        # 왼쪽 결과 테이블
+        result_layout.addWidget(self.result_table, 7)  # 비율 7
+
+        # 오른쪽 결과 정보 프레임
+        self.result_info_frame = QFrame()
+        self.result_info_frame.setFrameShape(QFrame.StyledPanel)
+        self.result_info_layout = QVBoxLayout(self.result_info_frame)
+
+        # 결과 정보 레이블들
+        total_cost_label = QLabel("총 비용: ")
+        total_cost_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.total_cost = QLabel("0")
+        total_value_label = QLabel("총 가치: ")
+        total_value_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        failure_label = QLabel("고장률")
+        ens_label = QLabel("ENS")
+        cic_label = QLabel("CIC")
+        self.failure_value = QLabel("0")
+        self.ens_value = QLabel("0")
+        self.cic_value = QLabel("0")
+        solution_time_label = QLabel("계산 시간: ")
+        solution_time_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        self.elapsed_time = QLabel("0")
+
+        # 정보 레이블 추가
+        self.result_info_layout.addWidget(QLabel("최적화 결과 요약"), 0, Qt.AlignCenter)
+        self.result_info_layout.addWidget(total_cost_label)
+        self.result_info_layout.addWidget(self.total_cost)
+        self.result_info_layout.addWidget(total_value_label)
+        self.result_info_layout.addWidget(failure_label)
+        self.result_info_layout.addWidget(self.failure_value)
+        self.result_info_layout.addWidget(ens_label)
+        self.result_info_layout.addWidget(self.ens_value)
+        self.result_info_layout.addWidget(cic_label)
+        self.result_info_layout.addWidget(self.cic_value)
+        self.result_info_layout.addWidget(solution_time_label)
+        self.result_info_layout.addWidget(self.elapsed_time)
+        self.result_info_layout.addStretch()
+
+        # 결과 레이아웃에 정보 프레임 추가
+        result_layout.addWidget(self.result_info_frame, 3)  # 비율 3
+
+        self.main_layout.addLayout(result_layout)
+
 
     def update_constraint_visibility(self):
         # 문제 유형에 따라 UI 요소 표시/숨김
@@ -550,7 +598,7 @@ class OptimizationUI(QMainWindow):
         # 설정 저장
         success = save_config(self.config, self.config_path)
         if success:
-            QMessageBox.information(self, "설정 저장", "설정이 config.json 파일에 저장되었습니다.")
+            QMessageBox.information(self, "설정 저장", f"설정이 {self.config_path}에 저장되었습니다.")
         else:
             QMessageBox.warning(self, "저장 실패", "설정 저장에 실패했습니다.")
 
@@ -629,8 +677,15 @@ class OptimizationUI(QMainWindow):
         self.save_current_config()
 
         try:
-            solution, total_cost, total_value, solve_time = main.run_optimization()
+            solution, total_cost, total_value, solve_time = main.run_optimization(self.config_path)
             # 결과 표시
+            self.total_cost.setText(f"{total_cost:.2f}")
+            self.failure_value.setText(f"{total_value[0]:.2f}")
+            self.ens_value.setText(f"{total_value[1]:.2f}")
+            self.cic_value.setText(f"{total_value[2]:,.2f}")
+            self.elapsed_time.setText(f"{solve_time:.2f}초")
+            self.solution = solution
+
             self.display_solution()
 
             QMessageBox.information(self, "계산 완료",
@@ -644,38 +699,26 @@ class OptimizationUI(QMainWindow):
             raise e
 
     def display_solution(self):
-        if not self.solution or not self.problem:
-            return
-
-        # 결과 테이블 설정
-        costs = self.problem["cost"]
-        values = self.problem["value"]
-
         # 결과 테이블 크기 설정
         self.result_table.setRowCount(len(self.solution))
         self.result_table.setColumnCount(5)  # 설비, 변경, 정밀점검, 보통점검, 현상유지
         self.result_table.setHorizontalHeaderLabels(["설비", "변경", "정밀점검", "보통점검", "현상유지"])
 
-        # 결과 채우기
-        for i, choice in enumerate(self.solution):
-            # 설비명
-            item_name = costs.index[i] if i < len(costs.index) else f"Item {i}"
-            self.result_table.setItem(i, 0, QTableWidgetItem(str(item_name)))
+        solution = read_solution(file_path=self.config["output"]["file_path"],
+                                 sheet_name=self.config["output"]["sheet_name"],
+                                 start_cell=self.config["output"]["cell"])
+        self.solution = solution
 
-            # 선택된 전략 표시
-            # 현상유지 상태 확인 (choice가 0, 1, 2 이외의 값인 경우)
-            is_maintained = choice not in [0, 1, 2] or choice is None
+        # 솔루션 데이터프레임의 값을 결과 테이블에 표시
+        for row_idx, row_name in enumerate(solution.index):
+            # 설비 이름 설정
+            self.result_table.setItem(row_idx, 0, QTableWidgetItem(str(row_name)))
 
-            for j in range(1, self.result_table.columnCount()):
-                if is_maintained and j == 4:  # 현상유지 열 (인덱스 4)
-                    self.result_table.setItem(i, j, QTableWidgetItem("✓"))
-                    self.result_table.item(i, j).setTextAlignment(Qt.AlignCenter)
-                elif not is_maintained and j - 1 == choice:  # 변경(1), 정밀점검(2), 보통점검(3) 열
-                    self.result_table.setItem(i, j, QTableWidgetItem("✓"))
-                    self.result_table.item(i, j).setTextAlignment(Qt.AlignCenter)
-                else:
-                    self.result_table.setItem(i, j, QTableWidgetItem(""))
+            # 각 전략별 값 설정 (변경, 정밀점검, 보통점검, 현상유지)
+            for col_idx, col_name in enumerate(solution.columns):
+                self.result_table.setItem(row_idx, col_idx + 1, QTableWidgetItem(str(solution.iloc[row_idx, col_idx])))
 
+        # 결과 테이블 크기 조정
         self.result_table.resizeColumnsToContents()
 
 
