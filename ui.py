@@ -10,9 +10,7 @@ from PySide6.QtCore import Qt
 from openpyxl.utils import column_index_from_string
 from openpyxl.utils.cell import coordinate_from_string
 
-import src.solver.cpsat as cpsat
-import src.solver.scip as scip
-from src.problem.io import read_problem_from_excel, write_solution_to_excel, add_nothing_strategy
+import main
 
 # 기본 설정값 (config.json이 없을 경우 사용)
 DEFAULT_CONFIG = {
@@ -176,8 +174,12 @@ class OptimizationUI(QMainWindow):
         self.config_load_button.clicked.connect(lambda: self.load_configs())
         configs_layout.addWidget(self.config_load_button)
 
-
         self.main_layout.addLayout(configs_layout)
+
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setFrameShadow(QFrame.Sunken)
+        self.main_layout.addWidget(divider)
 
         settings_label = QLabel("문제 설정")
         settings_label.setStyleSheet("font-size: 16px; font-weight: bold;")
@@ -209,24 +211,36 @@ class OptimizationUI(QMainWindow):
 
         # 민감도 가중치 필드
         self.sensitivity_weights_label = QLabel("민감도 가중치")
+        self.sensitivity_weights_texts = ["고장율", "ENS", "CIC"]
+        self.sensitivity_weights_labels = []
         settings_layout.addWidget(self.sensitivity_weights_label, 2, 2)
-        self.sensitivity_weights = []
-        for i in range(3):
+        self.sensitivity_weights_input = []
+        for i, label in enumerate(self.sensitivity_weights_texts):
+            weight_label = QLabel(label)
+            settings_layout.addWidget(weight_label, 2, i + 3)
             weight_input = QLineEdit()
             weight_input.setText("1")
             weight_input.setFixedWidth(80)
-            settings_layout.addWidget(weight_input, 2, 3 + i)
-            self.sensitivity_weights.append(weight_input)
+            settings_layout.addWidget(weight_input, 3, i + 3)
+            self.sensitivity_weights_input.append(weight_input)
+            self.sensitivity_weights_labels.append(weight_label)
+
+        self.normalization_label = QLabel("Min-Max 정규화:")
+        settings_layout.addWidget(self.normalization_label, 4, 3)  # 행 번호는 기존 UI 구조에 맞게 조정
+        self.normalization_checkbox = QCheckBox("모든 파라미터 정규화")
+        self.normalization_checkbox.setToolTip(
+            "모든 파라미터를 Min-Max정규화하여 민감도 목적함수를 구성합니다.")
+        settings_layout.addWidget(self.normalization_checkbox, 4, 4, 1, 4)
 
         # 민감도 제약 프레임 (이름 변경)
         self.sensitivity_constraint_frame = QFrame()
         sensitivity_layout = QGridLayout(self.sensitivity_constraint_frame)
         sensitivity_layout.addWidget(QLabel("민감도 제약"), 0, 0)
 
-        self.sensitivity_labels = ["고장율", "ENS", "CIC"]
+        self.sensitivity_texts = ["고장율", "ENS", "CIC"]
         self.sensitivity_constraints = []
 
-        for i, label in enumerate(self.sensitivity_labels):
+        for i, label in enumerate(self.sensitivity_texts):
             sensitivity_layout.addWidget(QLabel(label), 0, i + 1)
             constraint_input = QLineEdit()
             constraint_input.setText("1")
@@ -234,18 +248,23 @@ class OptimizationUI(QMainWindow):
             sensitivity_layout.addWidget(constraint_input, 1, i + 1)
             self.sensitivity_constraints.append(constraint_input)
 
-        settings_layout.addWidget(self.sensitivity_constraint_frame, 3, 2, 2, 4)
+        settings_layout.addWidget(self.sensitivity_constraint_frame, 1, 2, 2, 4)
 
-        settings_layout.addWidget(QLabel("현상유지 전략:"), 4, 0)  # 행 번호는 기존 UI 구조에 맞게 조정
+        settings_layout.addWidget(QLabel("현상유지 전략:"), 5, 0)  # 행 번호는 기존 UI 구조에 맞게 조정
         self.add_nothing_checkbox = QCheckBox("문제 해결 시 '현상유지' 전략 추가")
         self.add_nothing_checkbox.setToolTip(
             "체크하면 '현상유지' 전략이 추가되고, 체크하지 않으면 아무 전략도 선택하지 않을 경우 비용과 가치가 0인 '현상유지'로 취급합니다.")
-        settings_layout.addWidget(self.add_nothing_checkbox, 4, 1, 1, 5)
+        settings_layout.addWidget(self.add_nothing_checkbox, 5, 1, 1, 5)
 
         self.main_layout.addLayout(settings_layout)
 
     def create_import_section(self):
         # 값 불러오기 섹션
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setFrameShadow(QFrame.Sunken)
+        self.main_layout.addWidget(divider)
+
         import_label = QLabel("값 미리보기")
         import_label.setStyleSheet("font-size: 16px; font-weight: bold;")
         self.main_layout.addWidget(import_label)
@@ -326,6 +345,11 @@ class OptimizationUI(QMainWindow):
 
     def create_output_section(self):
         # 출력 설정 섹션
+        divider = QFrame()
+        divider.setFrameShape(QFrame.HLine)
+        divider.setFrameShadow(QFrame.Sunken)
+        self.main_layout.addWidget(divider)
+
         output_label = QLabel("출력 설정")
         output_label.setStyleSheet("font-size: 16px; font-weight: bold;")
         self.main_layout.addWidget(output_label)
@@ -382,7 +406,7 @@ class OptimizationUI(QMainWindow):
         # 저장 버튼
         self.save_button = QPushButton("설정 저장")
         self.save_button.setStyleSheet("background-color: #4CAF50; color: white; padding: 10px; font-size: 14px;")
-        self.save_button.clicked.connect(lambda : self.save_current_config())
+        self.save_button.clicked.connect(lambda: self.save_current_config())
         button_layout.addWidget(self.save_button)
 
         # 풀이 버튼
@@ -419,8 +443,14 @@ class OptimizationUI(QMainWindow):
 
         # 민감도 가중치 관련 UI 요소 (비용 제약일 때만 표시)
         self.sensitivity_weights_label.setVisible(is_cost_constraint)
-        for weight_input in self.sensitivity_weights:
+        for weight_input in self.sensitivity_weights_input:
             weight_input.setVisible(is_cost_constraint)
+
+        for weight_label in self.sensitivity_weights_labels:
+            weight_label.setVisible(is_cost_constraint)
+
+        self.normalization_label.setVisible(is_cost_constraint)
+        self.normalization_checkbox.setVisible(is_cost_constraint)
 
         # 민감도 제약 관련 UI 요소 (민감도 제약일 때만 표시)
         self.sensitivity_constraint_frame.setVisible(not is_cost_constraint)
@@ -452,12 +482,13 @@ class OptimizationUI(QMainWindow):
 
         # 비용 제약 설정
         self.cost_constraint_input.setText(str(solver_config.get("cost_constraint", 1000)))
+        self.normalization_checkbox.setChecked(solver_config.get("normalization", False))
 
         # 가중치 설정
         value_weights = solver_config.get("value_weights", [1.0, 1.0, 1.0])
         for i, weight in enumerate(value_weights):
-            if i < len(self.sensitivity_weights):
-                self.sensitivity_weights[i].setText(str(weight))
+            if i < len(self.sensitivity_weights_input):
+                self.sensitivity_weights_input[i].setText(str(weight))
 
         # 민감도 제약 설정
         reliability_constraint = solver_config.get("reliability_constraint", [1, 1, 1])
@@ -495,7 +526,8 @@ class OptimizationUI(QMainWindow):
         # 문제 유형에 따라 다른 설정 저장
         if problem_type == "cost_constraint":
             self.config["solver"]["cost_constraint"] = float(self.cost_constraint_input.text())
-            self.config["solver"]["value_weights"] = [float(w.text()) for w in self.sensitivity_weights]
+            self.config["solver"]["value_weights"] = [float(w.text()) for w in self.sensitivity_weights_input]
+            self.config["solver"]["value_normalization"] = self.normalization_checkbox.isChecked()
         else:
             self.config["solver"]["reliability_constraint"] = [float(c.text()) for c in self.sensitivity_constraints]
 
@@ -597,75 +629,19 @@ class OptimizationUI(QMainWindow):
         self.save_current_config()
 
         try:
-            # 문제를 읽고 풀기
-            self.problem = read_problem_from_excel(
-                self.config["input"]["file_path"],
-                cost_range=self.config["input"]["cost_range"],
-                cost_sheet=self.config["input"]["cost_sheet"],
-                value_range=self.config["input"]["value_range"],
-                value_sheet=self.config["input"]["value_sheet"]
-            )
-
-            allow_nothing_strategy = not self.config["input"]["add_nothing_strategy"]
-
-            if self.config["input"]["add_nothing_strategy"]:
-                self.problem = add_nothing_strategy(self.problem)
-
-            # 솔버 설정
-            solver_type = self.config["solver"]["type"]
-            problem_type = self.config["solver"]["problem_type"]
-
-            # 솔버 실행
-            if solver_type == "SCIP":
-                if problem_type == "cost_constraint":
-                    self.solution, cost, value, time = scip.solve_cost_constraint(
-                        self.problem,
-                        cost_constraint=self.config["solver"]["cost_constraint"],
-                        value_weights=self.config["solver"]["value_weights"],
-                        allow_zero_strategy=allow_nothing_strategy
-                    )
-                else:
-                    self.solution, cost, value, time = scip.solve_reliability_constraint(
-                        self.problem,
-                        reliability_constraint=self.config["solver"]["reliability_constraint"],
-                        allow_zero_strategy=allow_nothing_strategy
-                    )
-            else:  # CP-SAT
-                if problem_type == "cost_constraint":
-                    self.solution, cost, value, time = cpsat.solve_cost_constraint(
-                        self.problem,
-                        cost_constraint=self.config["solver"]["cost_constraint"],
-                        value_weights=self.config["solver"]["value_weights"],
-                        allow_zero_strategy=allow_nothing_strategy
-                    )
-                else:
-                    self.solution, cost, value, time = cpsat.solve_reliability_constraint(
-                        self.problem,
-                        reliability_constraint=self.config["solver"]["reliability_constraint"],
-                        allow_zero_strategy=allow_nothing_strategy
-                    )
-
+            solution, total_cost, total_value, solve_time = main.run_optimization()
             # 결과 표시
             self.display_solution()
 
-            # 결과 저장
-            write_solution_to_excel(
-                self.config["output"]["file_path"],
-                sheet_name=self.config["output"]["sheet_name"],
-                problem=self.problem,
-                solution=self.solution,
-                start_cell=self.config["output"]["cell"],
-            )
-
             QMessageBox.information(self, "계산 완료",
                                     f"최적화 계산이 완료되었습니다.\n"
-                                    f"총 비용: {cost}\n"
-                                    f"계산 시간: {time:.2f}초\n"
+                                    f"총 비용: {total_cost}\n"
+                                    f"계산 시간: {solve_time:.2f}초\n"
                                     f"결과가 {self.config['output']['file_path']} 파일에 저장되었습니다.")
 
         except Exception as e:
             QMessageBox.critical(self, "오류", f"최적화 문제 해결 오류: {e}")
-            print(f"최적화 문제 해결 오류: {e}")
+            raise e
 
     def display_solution(self):
         if not self.solution or not self.problem:
