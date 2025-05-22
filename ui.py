@@ -680,8 +680,8 @@ class OptimizationUI(QMainWindow):
             solution, total_cost, total_value, solve_time = main.run_optimization(self.config_path)
             # 결과 표시
             self.total_cost.setText(f"{total_cost:.2f}")
-            self.failure_value.setText(f"{total_value[0]:.2f}")
-            self.ens_value.setText(f"{total_value[1]:.2f}")
+            self.failure_value.setText(f"{total_value[0]:.10f}")
+            self.ens_value.setText(f"{total_value[1]:.8f}")
             self.cic_value.setText(f"{total_value[2]:,.2f}")
             self.elapsed_time.setText(f"{solve_time:.2f}초")
             self.solution = solution
