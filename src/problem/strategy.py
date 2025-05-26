@@ -98,7 +98,6 @@ def make_random_problem(num_items: int = 50,
 
     total_costs = sum(costs[i][strategy_count - 1] for i in range(num_items))
 
-    # 비용의 비율을 조정
     costs = [
         [cost * problem_cost * cost_ratio / total_costs for cost in costs[i]]
         for i in range(num_items)
@@ -182,7 +181,7 @@ def get_total_value(values: pd.DataFrame,
 
 def get_value(values: pd.DataFrame, solution: list[int] | list[list[bool]]) -> list[float]:
     """
-    주어진 문제와 솔루션에 대해 각 가치 차원별 가치를 계산합니다.
+    주어진 문제와 솔루션에 대해 각 가치를 계산합니다.
 
     Args:
         values: 가치를 담은 데이터프레임 목록
@@ -234,6 +233,30 @@ def get_cost(costs: pd.DataFrame, solution: list[int] | list[list[bool]]):
         solution = [solution[i].index(True) for i in range(len(solution))]
 
     return sum(costs.iloc[i, solution[i]] if solution[i] != -1 else 0 for i in range(len(solution)))
+
+def get_value_cost_ratio(problem: dict, solution: list[int] | list[list[bool]]) -> list[float]:
+    """
+    주어진 문제와 솔루션에 대해 가치 대비 비용 비율을 계산합니다.
+    :param problem: 문제 딕셔너리 {"cost": DataFrame, "value": [DataFrame...]}
+    :param solution: 각 아이템에 대해 선택된 전략 인덱스 또는 불리언 리스트
+    :return: 각 가치에 대한 비용 대비 가치 비율 리스트
+    """
+    costs = problem["cost"]
+    values = problem["value"]
+
+    if type(solution[0]) is list:
+        solution = [solution[i].index(True) for i in range(len(solution))]
+
+    value_cost_ratio = []
+    for i in range(len(solution)):
+        cost = costs.iloc[i, solution[i]]
+        value = values[i].to_numpy()
+        if cost == 0:
+            value_cost_ratio.append(float('inf'))  # 비용이 0인 경우 무한대 비율
+        else:
+            value_cost_ratio.append(sum(value[j][solution[i]] for j in range(len(value))) / cost)
+
+    return value_cost_ratio
 
 
 def display_solution(problem: dict, solution: list[int] | list[list[bool]], weights: list[float] = None):
