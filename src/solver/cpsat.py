@@ -175,7 +175,7 @@ def solve_reliability_constraint(problem, reliability_constraint, allow_zero_str
         for k in range(len(reliability_constraint)):
             model.Add(
                 sum(int(values[i].iloc[k, j] * CP_SAT_COEF) * x[i][j] for i in range(num_item) for j in range(action_dim))
-                >= int(reliability_constraint[k] * CP_SAT_COEF)
+                > int(reliability_constraint[k] * CP_SAT_COEF)
             )
     except IndexError as e:
         raise IndexError(f"{e}"
