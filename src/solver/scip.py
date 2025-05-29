@@ -174,7 +174,7 @@ def solve_reliability_constraint(problem, reliability_constraint, allow_zero_str
 
     try:
         for k in range(len(reliability_constraint)):
-            solver.Add(sum(values[i].iloc[k, j] * x[i][j] for i in range(num_item) for j in range(action_dim)) >
+            solver.Add(sum(values[i].iloc[k, j] * x[i][j] for i in range(num_item) for j in range(action_dim)) >=
                        reliability_constraint[k])
     except IndexError as e:
         raise IndexError(f"{e}"
