@@ -1,3 +1,8 @@
+"""
+이 모듈은 demo를 위해 임시적으로 작성하였기 때문에 별도의 주석을 제공하지 않습니다.
+"""
+
+
 import sys
 import json
 
@@ -445,10 +450,10 @@ class OptimizationUI(QMainWindow):
         self.result_info_layout = QVBoxLayout(self.result_info_frame)
 
         # 결과 정보 레이블들
-        total_cost_label = QLabel("총 비용: ")
+        total_cost_label = QLabel("비용: ")
         total_cost_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         self.total_cost = QLabel("0")
-        total_value_label = QLabel("총 가치: ")
+        total_value_label = QLabel("민감도: ")
         total_value_label.setStyleSheet("font-size: 14px; font-weight: bold;")
         failure_label = QLabel("고장률")
         ens_label = QLabel("ENS")
