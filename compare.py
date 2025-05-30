@@ -10,7 +10,7 @@ import src.solver.scip as scip
 from src.problem.io import add_nothing_strategy
 from src.problem.strategy import make_random_problem
 
-for n_item in [1000, 1500, 2000]:
+for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
 
     total_elapsed_time = []
     total_obj = []
@@ -21,7 +21,7 @@ for n_item in [1000, 1500, 2000]:
                                     random_seed=999 + i,
                                     allow_zero_strategy=True,
                                     strategy_count=len(strategy_label)
-                                    ) for i in range(5)]
+                                    ) for i in range(10)]
     for i, problem in enumerate(problems):
 
         print(f"========================== PROBLEM {i} ==========================")
@@ -88,7 +88,7 @@ for n_item in [1000, 1500, 2000]:
         total_elapsed_time.append(problem_elapsed_times)
         total_obj.append(problem_obj)
 
-    time_output_name = f"data/elapsed_time_{n_item}.xlsx"
+    time_output_name = f"data/elapsed_time_{n_item}_2.xlsx"
     costs_output_name = f"data/costs_n_values_{n_item}.xlsx"
 
     pd.DataFrame(total_elapsed_time,
