@@ -40,11 +40,9 @@ def make_random_problem(num_items: int = 50,
                         item_label: list[str] = None,
                         strategy_count: int = 4,
                         strategy_label: list[str] = None,
-                        cost_range: tuple[float, float] = (1000, 5000),
                         value_range: tuple[float, float] = (0, 10),
                         value_dimension: int = 3,
-                        problem_cost: float = 1000,
-                        cost_ratio: float = 2.0,
+                        problem_cost_coef: float = 1000,
                         random_seed: int = 42,
                         allow_zero_strategy: bool = False,
                         ):
@@ -56,11 +54,9 @@ def make_random_problem(num_items: int = 50,
         item_label: 아이템 레이블 목록. None인 경우 자동 생성
         strategy_count: 각 아이템에 대한 전략 수
         strategy_label: 전략 레이블 목록. None인 경우 자동 생성
-        cost_range: (최소 비용, 최대 비용) 튜플
         value_range: (최소 가치, 최대 가치) 튜플
         value_dimension: 가치 차원 수
-        problem_cost: 문제 총 비용 스케일링 기준값
-        cost_ratio: 비용 비율 조정 계수
+        problem_cost_coef: 문제 총 비용 스케일링 기준값
         random_seed: 랜덤 시드 값
         allow_zero_strategy: 아무것도 하지 않음 전략을 허용할지 여부. 현상유지 작전이 없을 경우 True로 설정해야 함.
 
@@ -74,11 +70,11 @@ def make_random_problem(num_items: int = 50,
 
     if allow_zero_strategy:
         # 각 아이템에 대해 전략을 랜덤하게 생성, 비용과 가치는 내림차순으로 정렬
-        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count)], reverse=True) for _ in range(num_items)]
+        costs = [sorted([random.uniform(0, 1) for _ in range(strategy_count)], reverse=True) for _ in range(num_items)]
         values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count)], reverse=True) for _ in
                    range(value_dimension)] for _ in range(num_items)]
     else:
-        costs = [sorted([random.uniform(*cost_range) for _ in range(strategy_count - 1)] + [0], reverse=True) for _ in range(num_items)]
+        costs = [sorted([random.uniform(0, 1) for _ in range(strategy_count - 1)] + [0], reverse=True) for _ in range(num_items)]
         values = [[sorted([random.uniform(*value_range) for _ in range(strategy_count - 1)] + [0], reverse=True) for _ in
                    range(value_dimension)] for _ in range(num_items)]
 
@@ -99,7 +95,7 @@ def make_random_problem(num_items: int = 50,
     total_costs = sum(costs[i][strategy_count - 1] for i in range(num_items))
 
     costs = [
-        [cost * problem_cost * cost_ratio / total_costs for cost in costs[i]]
+        [cost * problem_cost_coef for cost in costs[i]]
         for i in range(num_items)
     ]
 
