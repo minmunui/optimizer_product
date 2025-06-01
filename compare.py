@@ -4,7 +4,6 @@
 """
 
 import pandas as pd
-import os
 
 import src.solver.cpsat as cpsat
 import src.solver.scip as scip
@@ -12,7 +11,7 @@ from src.problem.io import add_nothing_strategy
 from src.problem.strategy import make_random_problem
 PROBLEM_COST_COEF = 1_000  # 문제 비용 계수
 
-for n_item in [50]:
+for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
 
     total_elapsed_time = []
     total_obj = []
