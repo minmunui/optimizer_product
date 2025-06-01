@@ -203,7 +203,10 @@ def get_value(values: pd.DataFrame, solution: list[int] | list[list[bool]]) -> l
     for i in range(len(solution)):
         value = values[i].to_numpy()
         for j in range(value_dim):
-            total_value[j] += value[j][solution[i]].tolist()
+            if solution[i] == -1:
+                total_value[j] += 0
+            else:
+                total_value[j] += value[j][solution[i]]
 
     return total_value
 
