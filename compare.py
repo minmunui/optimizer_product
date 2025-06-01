@@ -21,12 +21,12 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
                                     random_seed=999 + i,
                                     allow_zero_strategy=True,
                                     strategy_count=len(strategy_label)
-                                    ) for i in range(10)]
+                                    ) for i in range(1)]
     for i, problem in enumerate(problems):
 
         print(f"========================== PROBLEM {i} ==========================")
 
-        problem_obj = []
+        problem_result = []
         problem_values = []
         problem_elapsed_times = []
 
@@ -37,14 +37,15 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
                 print(value)
 
             print(f" ------------------- SCIP Cost Constraint: {i} ------------------- ")
-            sol_scip_cost, total_cost, total_value, elapsed_time = (
+            sol, total_cost, total_value, elapsed_time = (
                 scip.solve_cost_constraint(problem, cost_constraint=2 * n_item, value_weights=None,
                                            allow_zero_strategy=allow_zero_strategy))
-            print(f"Selected: {sol_scip_cost}")
+            print(f"Selected: {sol}")
             print(f"Total Cost: {total_cost}")
             print(f"Value : {total_value}")
 
-            problem_obj.append(total_value)
+            problem_result.append(total_value)
+            problem_result.append(total_cost)
             problem_elapsed_times.append(elapsed_time)
 
             print(f" ------------------- CP-SAT Cost Constraint: {i} ------------------- ")
@@ -55,7 +56,8 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
             print(f"Total Cost: {total_cost}")
             print(f"Value : {total_value}")
 
-            problem_obj.append(total_value)
+            problem_result.append(total_value)
+            problem_result.append(total_cost)
             problem_elapsed_times.append(elapsed_time)
 
             print(f" ------------------- SCIP Reliability Constraint: {i} ------------------- ")
@@ -67,7 +69,8 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
             print(f"Total Cost: {total_cost}")
             print(f"Value : {total_value}")
 
-            problem_obj.append(total_cost)
+            problem_result.append(total_value)
+            problem_result.append(total_cost)
             problem_elapsed_times.append(elapsed_time)
 
             print(f" ------------------- CP-SAT Reliability Constraint: {i} ------------------- ")
@@ -79,17 +82,22 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
             print(f"Total Cost: {total_cost}")
             print(f"Value : {total_value}")
 
-            problem_obj.append(total_cost)
+            problem_result.append(total_value)
+            problem_result.append(total_cost)
             problem_elapsed_times.append(elapsed_time)
 
             if allow_zero_strategy:
                 problem = add_nothing_strategy(problem)
 
+        problem_result.append(2 * n_item)  # cost constraint
+        problem_result.append([2.5 * n_item, 2.5 * n_item, 2.5 * n_item])
+        for i in problem_result:
+            print(i)
         total_elapsed_time.append(problem_elapsed_times)
-        total_obj.append(problem_obj)
+        total_obj.append(problem_result)
 
-    time_output_name = f"data/elapsed_time_{n_item}_2.xlsx"
-    costs_output_name = f"data/costs_n_values_{n_item}.xlsx"
+    time_output_name = f"data/i7_elapsed_time_{n_item}.xlsx"
+    result_output_name = f"data/i7_results_{n_item}.xlsx"
 
     pd.DataFrame(total_elapsed_time,
                  columns=["scip_cost_zero",
@@ -104,13 +112,23 @@ for n_item in [30, 50, 70, 100, 150, 200, 300, 500, 1000, 1500, 2000]:
         time_output_name, index=False)
 
     pd.DataFrame(total_obj,
-                 columns=["scip_cost_zero",
-                          "cpsat_cost_zero",
-                          "scip_reliability_zero",
-                          "cpsat_reliability_zero",
-                          "scip_cost",
-                          "cpsat_cost",
-                          "scip_reliability",
-                          "cpsat_reliability"
+                 columns=["scip_cost_value_zero",
+                          "scip_cost_cost_zero",
+                          "cpsat_cost_value_zero",
+                          "cpsat_cost_cost_zero",
+                          "scip_reliability_value_zero",
+                          "scip_reliability_cost_zero",
+                          "cpsat_reliability_value_zero",
+                          "cpsat_reliability_cost_zero",
+                          "scip_cost_value",
+                          "scip_cost_cost",
+                          "cpsat_cost_value",
+                          "cpsat_cost_cost",
+                          "scip_reliability_value",
+                          "scip_reliability_cost",
+                          "cpsat_reliability_value",
+                          "cpsat_reliability_cost",
+                          "cost_constraint",
+                          "reliability_constraint"
                           ]).to_excel(
-        costs_output_name, index=False)
+        result_output_name, index=False)
